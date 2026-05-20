@@ -244,12 +244,12 @@ footer {
 }
 .tunnel-marker[hidden] { display: none; }
 .tunnel-tick {
-  width: 3px;
+  width: 4px;
   height: 22px;
   margin: 0 auto;
-  background: #C53030;
+  background: #FCC636;
   border-radius: 2px;
-  box-shadow: 0 0 0 1.5px white;
+  box-shadow: 0 0 0 1.5px #1a1f2e;
 }
 .tunnel-label {
   position: absolute;
@@ -258,7 +258,10 @@ footer {
   transform: translateX(-50%);
   font-size: 10px;
   font-weight: 600;
-  color: #C53030;
+  color: #1a1f2e;
+  background: #FCC636;
+  padding: 2px 6px;
+  border-radius: 3px;
   white-space: nowrap;
   letter-spacing: 0.02em;
 }
@@ -267,9 +270,9 @@ footer {
   animation: tunnelPulse 0.9s ease-out;
 }
 @keyframes tunnelPulse {
-  0%   { box-shadow: 0 0 0 0   rgba(197, 48, 48, 0.7); transform: translate(-50%, -50%) scale(1.4); }
-  60%  { box-shadow: 0 0 0 12px rgba(197, 48, 48, 0);   transform: translate(-50%, -50%) scale(1); }
-  100% { box-shadow: 0 0 0 0   rgba(197, 48, 48, 0);   transform: translate(-50%, -50%) scale(1); }
+  0%   { box-shadow: 0 0 0 0    rgba(252, 198, 54, 0.75); transform: translate(-50%, -50%) scale(1.4); }
+  60%  { box-shadow: 0 0 0 14px rgba(252, 198, 54, 0);    transform: translate(-50%, -50%) scale(1); }
+  100% { box-shadow: 0 0 0 0    rgba(252, 198, 54, 0);    transform: translate(-50%, -50%) scale(1); }
 }
 .timeline input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -364,8 +367,12 @@ footer {
       <div class="legend-title">First built up by…</div>
       <div id="legend-rows"></div>
       <div class="legend-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line);">
-        <span style="display:inline-block;width:14px;height:0;border-top:2.5px solid #1a1f2e;"></span>
-        <span>Through-running rail</span>
+        <span style="display:inline-block;width:14px;height:0;border-top:6px solid #1a1f2e;border-radius:1px;"></span>
+        <span>The tunnel itself</span>
+      </div>
+      <div class="legend-row">
+        <span style="display:inline-block;width:14px;height:0;border-top:2px solid #1a1f2e;"></span>
+        <span>S-Bahn / RER / S-tog network</span>
       </div>
     </div>
   </div>
@@ -476,6 +483,55 @@ const CITIES = {
 const PNG_OPACITY = 0.95;
 const ANIM_STEP_MS = 900;
 
+// Real-world tunnel alignments (the actual subterranean through-running segments).
+// Coordinates trace the centreline approximately, stopping at the portal/terminus
+// stations. Three times the normal rail thickness so the tunnel reads as the
+// hero element. Appears at tunnel_year, hidden before.
+const TUNNELS = {
+  zurich: [
+    [8.5403, 47.3781],  // Hauptbahnhof
+    [8.5440, 47.3735],  // Limmat crossing area
+    [8.5478, 47.3667],  // Stadelhofen
+    [8.5700, 47.3800],  // Zürichberg under-massif
+    [8.5995, 47.4023],  // Stettbach (Zürichbergtunnel portal)
+  ],
+  paris: [
+    [2.3289, 48.8718],  // Auber
+    [2.3370, 48.8665],  // Châtelet north approach
+    [2.3470, 48.8606],  // Châtelet-Les Halles
+    [2.3736, 48.8443],  // Gare de Lyon
+    [2.3958, 48.8484],  // Nation
+  ],
+  frankfurt: [
+    [8.6629, 50.1071],  // Hauptbahnhof
+    [8.6710, 50.1110],  // Taunusanlage
+    [8.6786, 50.1138],  // Hauptwache
+    [8.6831, 50.1148],  // Konstablerwache
+    [8.6964, 50.1167],  // Ostendstrasse
+    [8.7203, 50.1115],  // Mühlberg portal
+  ],
+  stuttgart: [
+    [9.1812, 48.7833],  // Hauptbahnhof
+    [9.1740, 48.7747],  // Stadtmitte
+    [9.1715, 48.7720],  // Feuersee
+    [9.1664, 48.7716],  // Schwabstrasse portal
+  ],
+  munich: [
+    [11.5601, 48.1402],  // Hauptbahnhof
+    [11.5660, 48.1392],  // Karlsplatz (Stachus)
+    [11.5755, 48.1374],  // Marienplatz
+    [11.5824, 48.1352],  // Isartor
+    [11.5915, 48.1315],  // Rosenheimer Platz
+    [11.6045, 48.1271],  // Ostbahnhof
+  ],
+  copenhagen: [
+    [12.5654, 55.6724],  // Hovedbanegården
+    [12.5645, 55.6804],  // Vesterport
+    [12.5713, 55.6833],  // Nørreport
+    [12.5867, 55.6921],  // Østerport
+  ],
+};
+
 // ----- Map setup -----
 const map = new maplibregl.Map({
   container: 'map',
@@ -566,6 +622,48 @@ function addCityLayers(slug) {
       layout: { visibility: 'none' },
     });
   }
+
+  // The actual through-running tunnel — triple-thickness line, appears at
+  // tunnel_year. Sits on top of the rail-network layer so the eye reads it as
+  // the hero element.
+  const tunnelCoords = TUNNELS[slug];
+  if (tunnelCoords) {
+    const tunnelSourceId = `${slug}_tunnel`;
+    if (!map.getSource(tunnelSourceId)) {
+      map.addSource(tunnelSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: tunnelCoords },
+          properties: { opened_year: CITIES[slug].tunnel_year },
+        },
+      });
+      map.addLayer({
+        id: `${tunnelSourceId}_casing`,
+        type: 'line',
+        source: tunnelSourceId,
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 12,
+          'line-opacity': 0,
+          'line-opacity-transition': { duration: 700 },
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      });
+      map.addLayer({
+        id: `${tunnelSourceId}_line`,
+        type: 'line',
+        source: tunnelSourceId,
+        paint: {
+          'line-color': '#1a1f2e',
+          'line-width': 6,
+          'line-opacity': 0,
+          'line-opacity-transition': { duration: 700 },
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      });
+    }
+  }
   // Load per-city bounds JSON for area stats
   fetch(`data/${slug}_bounds.json`).then(r => r.json()).then(j => {
     cityBounds[slug] = j;
@@ -640,6 +738,15 @@ function refreshDisplay() {
       map.setLayoutProperty(rid, 'visibility', 'visible');
       const cutoffYear = staticMode ? EPOCHS[EPOCHS.length - 1] : EPOCHS[currentEpoch];
       map.setFilter(rid, ['<=', ['get', 'opened_year'], cutoffYear]);
+    }
+    // Tunnel hero line: invisible until year >= tunnel_year, then fades in.
+    const tunnelIds = [`${slug}_tunnel_casing`, `${slug}_tunnel_line`];
+    for (const tid of tunnelIds) {
+      if (!map.getLayer(tid)) continue;
+      const cfg = CITIES[slug];
+      const cutoffYear = staticMode ? EPOCHS[EPOCHS.length - 1] : EPOCHS[currentEpoch];
+      const open = slug === activeCity && cfg.tunnel_year && cutoffYear >= cfg.tunnel_year;
+      map.setPaintProperty(tid, 'line-opacity', open ? (tid.endsWith('_casing') ? 0.85 : 1) : 0);
     }
   }
   // Update labels
