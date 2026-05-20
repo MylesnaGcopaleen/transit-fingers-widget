@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How rail tunnels grow cities — Progress Ireland</title>
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+<style>
+:root {
+  --accent: #FCC636;
+  --accent-dark: #d4a41e;
+  --ink: #1a1f2e;
+  --ink-soft: #4a5568;
+  --paper: #fbf8f1;
+  --line: #d6cfb8;
+  --panel-bg: rgba(251, 248, 241, 0.96);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  min-height: 600px;
+}
+
+header {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+header h1 small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.city-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0,0,0,0.04);
+  padding: 3px;
+  border-radius: 8px;
+}
+.city-tabs button {
+  border: 0;
+  background: transparent;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.city-tabs button:hover { color: var(--ink); }
+.city-tabs button.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.mode-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.mode-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+#map-wrap {
+  position: relative;
+  overflow: hidden;
+}
+#map { position: absolute; inset: 0; }
+
+.side-panel {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 280px;
+  max-width: calc(100% - 28px);
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+  font-size: 13px;
+  line-height: 1.4;
+  z-index: 5;
+  backdrop-filter: blur(4px);
+}
+.side-panel h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.side-panel .subtitle {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.side-panel dl {
+  margin: 8px 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 10px;
+}
+.side-panel dt {
+  color: var(--ink-soft);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.side-panel dd {
+  margin: 0;
+  font-weight: 500;
+}
+.side-panel .insight {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+.impact-stat {
+  margin: 6px 0 12px;
+  padding: 10px 12px;
+  background: var(--accent);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #2a2210;
+}
+.impact-stat .big {
+  font-size: 22px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 2px;
+  letter-spacing: -0.02em;
+}
+.impact-stat .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.legend {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.legend-title { font-weight: 600; margin-bottom: 6px; font-size: 12px; }
+.legend-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+}
+.timeline {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+}
+.timeline .year {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 22px;
+  min-width: 70px;
+  color: var(--ink);
+}
+.timeline .year small { font-size: 11px; font-weight: 400; color: var(--ink-soft); display: block; margin-top: -2px; }
+.slider-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.timeline input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, #323C4B 0%, #323C4B 40%, #FCC636 100%);
+  border-radius: 4px;
+  outline: none;
+}
+.tunnel-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+  text-align: center;
+}
+.tunnel-marker[hidden] { display: none; }
+.tunnel-tick {
+  width: 3px;
+  height: 22px;
+  margin: 0 auto;
+  background: #C53030;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1.5px white;
+}
+.tunnel-label {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: #C53030;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+/* Pulse when the animation lands on the tunnel epoch */
+.tunnel-pulse {
+  animation: tunnelPulse 0.9s ease-out;
+}
+@keyframes tunnelPulse {
+  0%   { box-shadow: 0 0 0 0   rgba(197, 48, 48, 0.7); transform: translate(-50%, -50%) scale(1.4); }
+  60%  { box-shadow: 0 0 0 12px rgba(197, 48, 48, 0);   transform: translate(-50%, -50%) scale(1); }
+  100% { box-shadow: 0 0 0 0   rgba(197, 48, 48, 0);   transform: translate(-50%, -50%) scale(1); }
+}
+.timeline input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--ink);
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.timeline input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--ink);
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.timeline .play-btn {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.timeline .play-btn:hover { background: #000; }
+.timeline .static-toggle {
+  font-size: 12px;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.timeline .static-toggle.on { background: var(--accent); border-color: var(--accent-dark); color: var(--ink); }
+
+.attribution {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  text-align: right;
+}
+.attribution a { color: inherit; }
+
+@media (max-width: 720px) {
+  .side-panel { width: 220px; font-size: 12px; }
+  header { padding: 12px; gap: 12px; }
+  header h1 { font-size: 16px; }
+  .timeline { grid-template-columns: auto 1fr auto; gap: 10px; }
+  .timeline .static-toggle { grid-column: 1 / -1; justify-self: end; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Housing unlocked by through-running rail tunnels
+      <small>Built-up area 1975 → 2025, coloured by years since each city's tunnel opened</small>
+    </h1>
+    <div class="city-tabs" id="city-tabs">
+      <button data-city="zurich" class="active">Zürich</button>
+      <button data-city="paris">Paris</button>
+      <button data-city="frankfurt">Frankfurt</button>
+      <button data-city="stuttgart">Stuttgart</button>
+      <button data-city="munich">Munich</button>
+      <button data-city="copenhagen">Copenhagen</button>
+    </div>
+  </header>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <aside class="side-panel" id="panel">
+      <h2 id="panel-title">Zürich</h2>
+      <div class="subtitle" id="panel-subtitle">S-Bahn Zürich, 1990</div>
+      <div class="impact-stat" id="panel-impact"></div>
+      <dl id="panel-facts"></dl>
+      <div class="insight" id="panel-insight"></div>
+    </aside>
+
+    <div class="legend">
+      <div class="legend-title">First built up by…</div>
+      <div id="legend-rows"></div>
+      <div class="legend-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line);">
+        <span style="display:inline-block;width:14px;height:0;border-top:2.5px solid #1a1f2e;"></span>
+        <span>Through-running rail</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="timeline">
+      <div class="year"><span id="year-label">2025</span><small id="year-sub">all epochs visible</small></div>
+      <div class="slider-wrap">
+        <input type="range" id="time-slider" min="0" max="10" step="1" value="10" />
+        <div class="tunnel-marker" id="tunnel-marker" hidden>
+          <div class="tunnel-label" id="tunnel-label">Tunnel</div>
+          <div class="tunnel-tick"></div>
+        </div>
+      </div>
+      <button class="play-btn" id="play-btn" title="Play / pause">▶</button>
+      <button class="static-toggle on" id="static-toggle" title="Toggle static / animated mode">Static</button>
+    </div>
+    <div class="attribution">
+      Built-up data © <a href="https://human-settlement.emergency.copernicus.eu/" target="_blank" rel="noopener">European Commission JRC, GHS-BUILT-S R2023A</a> ·
+      Rail © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> ·
+      Built by <a href="https://progress-ireland.org" target="_blank" rel="noopener">Progress Ireland</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+// ----- Configuration -----
+const EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025];
+const COLOR_PRE       = '#323C4B';  // pre-tunnel city — dark slate
+const COLOR_NEAR_RAIL = '#FCC636';  // post-tunnel growth within 2km of S-Bahn — PI yellow
+const COLOR_FAR_RAIL  = '#AFB2B9';  // post-tunnel growth further from rail — light grey
+
+const CITIES = {
+  zurich: {
+    label: 'Zürich',
+    subtitle: 'S-Bahn Zürich, 1990',
+    bounds: [[8.30, 47.20], [8.85, 47.55]],
+    tunnel_year: 1990,
+    facts: [
+      ['Through-running tunnel', 'Hirschengrabentunnel + Zürichberg, 1990'],
+      ['What changed', 'S-Bahn launched; 15 lines tied dead-end commuter rails into one network'],
+      ['Population (canton)', '1.1M (1975) → 1.6M (2025)'],
+    ],
+    insight: '"Cleanest before/after in this dataset. Pre-1990 Zürich was the cantonal capital with shared regional tracks. Post-1990 the S-Bahn unlocked dense suburbanisation along every corridor."',
+  },
+  paris: {
+    label: 'Paris',
+    subtitle: 'RER tunnel, 1977',
+    bounds: [[1.85, 48.55], [2.85, 49.10]],
+    tunnel_year: 1977,
+    facts: [
+      ['Through-running tunnel', 'RER A — Châtelet-Les Halles, 1977'],
+      ['Followed by', 'RER B southern link 1981, RER C 1979, RER D 1987, RER E 1999'],
+      ['Population (region)', '9.9M (1975) → 12.3M (2025)'],
+    ],
+    insight: '"The RER stitched suburban rail to the metro at Châtelet. Post-1977 ring growth across Île-de-France traces the RER branches almost exactly."',
+  },
+  frankfurt: {
+    label: 'Frankfurt',
+    subtitle: 'S-Bahn Citytunnel, 1978',
+    bounds: [[8.20, 49.85], [9.05, 50.40]],
+    tunnel_year: 1978,
+    facts: [
+      ['Through-running tunnel', 'Citytunnel Frankfurt, 1978 — opened in stages'],
+      ['Network', 'S1–S6 launched together; S8 1992, S9 1997 added later'],
+      ['Population (metro)', '4.2M (1975) → 5.8M (2025)'],
+    ],
+    insight: '"Rhein-Main\'s S-Bahn linked Frankfurt with a ring of mid-sized commuter cities. Watch the yellow snap to the airport corridor (S8/S9) and the Taunus branches."',
+  },
+  stuttgart: {
+    label: 'Stuttgart',
+    subtitle: 'S-Bahn Stammstrecke, 1978',
+    bounds: [[8.85, 48.55], [9.55, 49.05]],
+    tunnel_year: 1978,
+    facts: [
+      ['Through-running tunnel', 'Stammstrecke Hbf–Schwabstrasse, 1978'],
+      ['Followed by', 'S4 1981, S6 1981, S5 1985, S60 2010'],
+      ['Population (region)', '2.3M (1975) → 2.8M (2025)'],
+    ],
+    insight: '"Stuttgart\'s valley topography forced linear suburbanisation along the S-Bahn corridors out of the Neckar basin — the yellow lines are unusually crisp."',
+  },
+  munich: {
+    label: 'Munich',
+    subtitle: 'Stammstrecke S-Bahn, 1972',
+    bounds: [[11.00, 47.90], [12.10, 48.45]],
+    tunnel_year: 1972,
+    facts: [
+      ['Through-running tunnel', 'Stammstrecke, 1972 — opened for the Olympics'],
+      ['Lines unified', '7 dead-end suburban lines became one S-Bahn system'],
+      ['Population (metro)', '1.9M (1975) → 3.0M (2025)'],
+    ],
+    insight: '"The Stammstrecke unified seven dead-end commuter lines for the 1972 Olympics. 50+ years on, the city is still growing into the corridors — every spoke has a thick warm crust along its outer half, and over half of all new Munich homes sit within 2km of the network."',
+  },
+  copenhagen: {
+    label: 'Copenhagen',
+    subtitle: 'S-tog through-running, 1934',
+    bounds: [[12.00, 55.45], [12.95, 55.95]],
+    tunnel_year: 1934,
+    facts: [
+      ['Through-running tunnel', 'Boulevardbanen 1917 — electrified for S-tog, 1934'],
+      ['Key planning moment', 'Finger Plan, 1947 — channels growth along five S-tog corridors'],
+      ['Population (metro)', '1.4M (1975) → 2.0M (2025)'],
+    ],
+    insight: '"The durability case. Copenhagen\'s tunnel opened in 1934 and the Finger Plan in 1947 — yet half of every new home built since 1975 is still snapping to the S-tog corridors. Once you shape a city around rail, the shape persists for generations."',
+  },
+};
+
+const PNG_OPACITY = 0.95;
+const ANIM_STEP_MS = 900;
+
+// ----- Map setup -----
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    sources: {
+      'osm': {
+        type: 'raster',
+        tiles: [
+          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        ],
+        tileSize: 256,
+        attribution: '© OpenStreetMap contributors',
+        minzoom: 0,
+        maxzoom: 19,
+      },
+    },
+    layers: [
+      { id: 'bg', type: 'background', paint: { 'background-color': '#f5f1e6' } },
+      {
+        id: 'osm-base',
+        type: 'raster',
+        source: 'osm',
+        paint: { 'raster-opacity': 0.35, 'raster-saturation': -0.7, 'raster-brightness-min': 0.4 },
+      },
+    ],
+  },
+  bounds: CITIES.zurich.bounds,
+  fitBoundsOptions: { padding: 40 },
+  attributionControl: false,
+});
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+
+// ----- State -----
+let activeCity = 'zurich';
+let currentEpoch = EPOCHS.length - 1; // 2025
+let staticMode = true;
+let playing = false;
+let playTimer = null;
+
+const layersById = {};
+const cityBounds = {};  // slug -> bounds JSON (loaded async)
+
+function addCityLayers(slug) {
+  const bounds = CITIES[slug].bounds;
+  const coords = [
+    [bounds[0][0], bounds[1][1]],
+    [bounds[1][0], bounds[1][1]],
+    [bounds[1][0], bounds[0][1]],
+    [bounds[0][0], bounds[0][1]],
+  ];
+  for (const year of EPOCHS) {
+    const sid = `${slug}_${year}`;
+    if (!map.getSource(sid)) {
+      map.addSource(sid, {
+        type: 'image',
+        url: `data/${slug}_${year}.png`,
+        coordinates: coords,
+      });
+      map.addLayer({
+        id: sid,
+        type: 'raster',
+        source: sid,
+        paint: {
+          'raster-opacity': 0,
+          'raster-opacity-transition': { duration: 280 },
+          'raster-fade-duration': 0,
+        },
+      });
+      layersById[sid] = true;
+    }
+  }
+  const railSourceId = `${slug}_rail`;
+  if (!map.getSource(railSourceId)) {
+    map.addSource(railSourceId, { type: 'geojson', data: `data/${slug}_rail.geojson` });
+    map.addLayer({
+      id: `${railSourceId}_casing`,
+      type: 'line',
+      source: railSourceId,
+      paint: { 'line-color': '#ffffff', 'line-width': 4, 'line-opacity': 0.9 },
+      layout: { visibility: 'none' },
+    });
+    map.addLayer({
+      id: `${railSourceId}_line`,
+      type: 'line',
+      source: railSourceId,
+      paint: { 'line-color': '#1a1f2e', 'line-width': 2, 'line-opacity': 0.95 },
+      layout: { visibility: 'none' },
+    });
+  }
+  // Load per-city bounds JSON for area stats
+  fetch(`data/${slug}_bounds.json`).then(r => r.json()).then(j => {
+    cityBounds[slug] = j;
+    if (slug === activeCity) updateImpactStat();
+  }).catch(() => {});
+}
+
+// Approximate dwelling density for European TOD: 40 dwellings/ha = 4,000/km².
+// Cited as illustrative — actual density varies city-to-city and includes
+// commercial uses.
+const DWELLINGS_PER_KM2 = 4000;
+
+function formatHomes(n) {
+  // Round to a "feels real" precision: nearest 1k under 100k, nearest 10k above.
+  if (n >= 100000) {
+    return (Math.round(n / 10000) * 10).toLocaleString() + 'k';
+  }
+  if (n >= 10000) {
+    return Math.round(n / 1000).toLocaleString() + 'k';
+  }
+  return Math.round(n / 100) * 100;  // nearest 100 under 10k
+}
+
+function updateImpactStat() {
+  const cfg = CITIES[activeCity];
+  const b = cityBounds[activeCity];
+  const el = document.getElementById('panel-impact');
+  if (!b) { el.innerHTML = ''; return; }
+  const epochIdx = staticMode ? EPOCHS.length - 1 : currentEpoch;
+  const nearAtEpoch = b.area_near_rail_km2_by_epoch[epochIdx];
+  const farAtEpoch  = b.area_far_rail_km2_by_epoch[epochIdx];
+  const totalPost = nearAtEpoch + farAtEpoch;
+  const pctNear = totalPost > 0 ? (nearAtEpoch / totalPost) * 100 : 0;
+  const homesNear = nearAtEpoch * DWELLINGS_PER_KM2;
+  const periodLine = b.tunnel_predates_dataset
+    ? `since 1975 (the ${cfg.tunnel_year} tunnel predates the dataset)`
+    : `since the ${cfg.tunnel_year} tunnel`;
+  el.innerHTML = `
+    <span class="big">${formatHomes(homesNear)} homes</span>
+    <span class="label">built within 2km of S-Bahn ${periodLine}<br>
+    ${pctNear.toFixed(0)}% of all new homes built in the city in this period</span>`;
+}
+
+function refreshDisplay() {
+  // Hide all non-active city layers
+  for (const slug of Object.keys(CITIES)) {
+    for (const year of EPOCHS) {
+      const lid = `${slug}_${year}`;
+      if (!map.getLayer(lid)) continue;
+      if (slug !== activeCity) {
+        map.setPaintProperty(lid, 'raster-opacity', 0);
+        continue;
+      }
+      let target = 0;
+      if (staticMode) {
+        // In static, only the final cumulative PNG is shown (it already encodes all colours)
+        target = (year === EPOCHS[EPOCHS.length - 1]) ? PNG_OPACITY : 0;
+      } else {
+        // Animation: show the cumulative PNG at the current epoch
+        target = (year === EPOCHS[currentEpoch]) ? PNG_OPACITY : 0;
+      }
+      map.setPaintProperty(lid, 'raster-opacity', target);
+    }
+    // Rail visibility / filter
+    const railIds = [`${slug}_rail_casing`, `${slug}_rail_line`];
+    for (const rid of railIds) {
+      if (!map.getLayer(rid)) continue;
+      if (slug !== activeCity) {
+        map.setLayoutProperty(rid, 'visibility', 'none');
+        continue;
+      }
+      map.setLayoutProperty(rid, 'visibility', 'visible');
+      const cutoffYear = staticMode ? EPOCHS[EPOCHS.length - 1] : EPOCHS[currentEpoch];
+      map.setFilter(rid, ['<=', ['get', 'opened_year'], cutoffYear]);
+    }
+  }
+  // Update labels
+  const yearShown = staticMode ? EPOCHS[EPOCHS.length - 1] : EPOCHS[currentEpoch];
+  document.getElementById('year-label').textContent = yearShown;
+  document.getElementById('year-sub').textContent = staticMode ? 'all epochs visible' : `as built by ${yearShown}`;
+  const slider = document.getElementById('time-slider');
+  slider.value = currentEpoch;
+  slider.disabled = staticMode;
+  document.getElementById('static-toggle').classList.toggle('on', staticMode);
+  document.getElementById('static-toggle').textContent = staticMode ? 'Static' : 'Animate';
+  updateImpactStat();
+}
+
+function startEpochIndex(slug) {
+  const ty = CITIES[slug].tunnel_year;
+  if (!ty || ty < EPOCHS[0]) return 0;
+  const target = ty - 5;
+  let best = 0;
+  for (let i = 0; i < EPOCHS.length; i++) {
+    if (EPOCHS[i] <= target) best = i;
+  }
+  return best;
+}
+
+function tunnelEpochIndex(slug) {
+  const ty = CITIES[slug].tunnel_year;
+  if (!ty || ty < EPOCHS[0]) return -1;
+  for (let i = 0; i < EPOCHS.length; i++) {
+    if (EPOCHS[i] >= ty) return i;
+  }
+  return EPOCHS.length - 1;
+}
+
+function updateTunnelMarker() {
+  const marker = document.getElementById('tunnel-marker');
+  const labelEl = document.getElementById('tunnel-label');
+  const idx = tunnelEpochIndex(activeCity);
+  if (idx < 0) {
+    marker.setAttribute('hidden', '');
+    return;
+  }
+  marker.removeAttribute('hidden');
+  const pct = (idx / (EPOCHS.length - 1)) * 100;
+  marker.style.left = `${pct}%`;
+  labelEl.textContent = `Tunnel ${CITIES[activeCity].tunnel_year}`;
+}
+
+function switchCity(slug) {
+  activeCity = slug;
+  document.querySelectorAll('#city-tabs button').forEach(b => {
+    b.classList.toggle('active', b.dataset.city === slug);
+  });
+  const cfg = CITIES[slug];
+  document.getElementById('panel-title').textContent = cfg.label;
+  document.getElementById('panel-subtitle').textContent = cfg.subtitle;
+  const dl = document.getElementById('panel-facts');
+  dl.innerHTML = cfg.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  document.getElementById('panel-insight').textContent = cfg.insight;
+  updateImpactStat();
+  updateTunnelMarker();
+  map.fitBounds(cfg.bounds, { padding: 50, duration: 600 });
+  refreshDisplay();
+}
+
+function startPlay() {
+  if (staticMode) toggleStatic();
+  playing = true;
+  document.getElementById('play-btn').textContent = '⏸';
+  // Start 5 years before tunnel where data allows; fall back to 1975 otherwise.
+  const start = startEpochIndex(activeCity);
+  if (currentEpoch >= EPOCHS.length - 1) currentEpoch = start;
+  const tunnelIdx = tunnelEpochIndex(activeCity);
+  playTimer = setInterval(() => {
+    currentEpoch++;
+    if (currentEpoch >= EPOCHS.length) {
+      currentEpoch = EPOCHS.length - 1;
+      stopPlay();
+    } else if (currentEpoch === tunnelIdx) {
+      // Tunnel-opens moment: pulse the marker.
+      const tick = document.querySelector('.tunnel-tick');
+      if (tick) { tick.classList.remove('tunnel-pulse'); void tick.offsetWidth; tick.classList.add('tunnel-pulse'); }
+    }
+    refreshDisplay();
+  }, ANIM_STEP_MS);
+  refreshDisplay();
+}
+
+function stopPlay() {
+  playing = false;
+  document.getElementById('play-btn').textContent = '▶';
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+}
+
+function toggleStatic() {
+  staticMode = !staticMode;
+  if (staticMode) {
+    stopPlay();
+    currentEpoch = EPOCHS.length - 1;
+  } else {
+    currentEpoch = startEpochIndex(activeCity);  // start at tunnel_year - 5 where possible
+  }
+  refreshDisplay();
+}
+
+// ----- Wire up UI -----
+document.querySelectorAll('#city-tabs button').forEach(b => {
+  b.addEventListener('click', () => switchCity(b.dataset.city));
+});
+document.getElementById('time-slider').addEventListener('input', e => {
+  if (staticMode) toggleStatic();
+  currentEpoch = parseInt(e.target.value, 10);
+  if (playing) stopPlay();
+  refreshDisplay();
+});
+document.getElementById('play-btn').addEventListener('click', () => {
+  playing ? stopPlay() : startPlay();
+});
+document.getElementById('static-toggle').addEventListener('click', toggleStatic);
+
+// Build legend
+const legendRows = document.getElementById('legend-rows');
+const legendEntries = [
+  ['Built before tunnel',                 COLOR_PRE],
+  ['Built after tunnel, within 2km of rail', COLOR_NEAR_RAIL],
+  ['Built after tunnel, further from rail',  COLOR_FAR_RAIL],
+];
+legendRows.innerHTML = legendEntries.map(([label, color]) =>
+  `<div class="legend-row"><span class="legend-swatch" style="background:${color};"></span>${label}</div>`
+).join('');
+
+// ----- Initial load -----
+map.on('load', () => {
+  for (const slug of Object.keys(CITIES)) addCityLayers(slug);
+  switchCity('zurich');
+});
+</script>
+</body>
+</html>

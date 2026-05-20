@@ -1,0 +1,76 @@
+{
+  "slug": "zurich",
+  "label": "Z\u00fcrich",
+  "tunnel_year": 1990,
+  "tunnel_predates_dataset": false,
+  "bbox_wgs84": [
+    8.3,
+    47.2,
+    8.85,
+    47.55
+  ],
+  "epochs": [
+    1975,
+    1980,
+    1985,
+    1990,
+    1995,
+    2000,
+    2005,
+    2010,
+    2015,
+    2020,
+    2025
+  ],
+  "corridor_buffer_m": 2000,
+  "palette_rgba": {
+    "pre_tunnel": [
+      50,
+      60,
+      75,
+      235
+    ],
+    "near_rail": [
+      252,
+      198,
+      54,
+      255
+    ],
+    "far_rail": [
+      175,
+      178,
+      185,
+      220
+    ]
+  },
+  "area_pre_tunnel_km2": 208.76,
+  "area_near_rail_km2_by_epoch": [
+    0.0,
+    0.0,
+    0.0,
+    7.16,
+    24.32,
+    41.68,
+    53.19,
+    65.93,
+    76.41,
+    81.68,
+    82.67
+  ],
+  "area_far_rail_km2_by_epoch": [
+    0.0,
+    0.0,
+    0.0,
+    3.87,
+    9.13,
+    16.46,
+    21.52,
+    27.57,
+    32.17,
+    34.56,
+    35.09
+  ],
+  "near_rail_share_pct": 70.2,
+  "raster_width": 510,
+  "raster_height": 479
+}

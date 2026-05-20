@@ -1,0 +1,76 @@
+{
+  "slug": "frankfurt",
+  "label": "Frankfurt",
+  "tunnel_year": 1978,
+  "tunnel_predates_dataset": false,
+  "bbox_wgs84": [
+    8.2,
+    49.85,
+    9.05,
+    50.4
+  ],
+  "epochs": [
+    1975,
+    1980,
+    1985,
+    1990,
+    1995,
+    2000,
+    2005,
+    2010,
+    2015,
+    2020,
+    2025
+  ],
+  "corridor_buffer_m": 2000,
+  "palette_rgba": {
+    "pre_tunnel": [
+      50,
+      60,
+      75,
+      235
+    ],
+    "near_rail": [
+      252,
+      198,
+      54,
+      255
+    ],
+    "far_rail": [
+      175,
+      178,
+      185,
+      220
+    ]
+  },
+  "area_pre_tunnel_km2": 574.6,
+  "area_near_rail_km2_by_epoch": [
+    0.0,
+    8.24,
+    16.9,
+    24.65,
+    35.07,
+    48.34,
+    54.82,
+    62.07,
+    69.2,
+    75.1,
+    76.61
+  ],
+  "area_far_rail_km2_by_epoch": [
+    0.0,
+    15.31,
+    31.96,
+    48.98,
+    65.88,
+    86.31,
+    99.27,
+    117.37,
+    131.68,
+    141.05,
+    145.51
+  ],
+  "near_rail_share_pct": 34.5,
+  "raster_width": 789,
+  "raster_height": 796
+}
