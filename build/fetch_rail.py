@@ -144,13 +144,13 @@ QUERIES = {
 }
 
 
-# Tunnel-connected line whitelist. When a city is in this dict, only lines whose
-# `ref` is in the set are emitted to the GeoJSON. Lines that exist physically but
-# don't pass through the through-running tunnel get dropped.
-TUNNEL_CONNECTED_REFS = {
-    "paris": {"A", "B", "D"},
-    "stuttgart": {"S1", "S2", "S3", "S4", "S5", "S6", "S11"},
-}
+# (Previously: a TUNNEL_CONNECTED_REFS whitelist dropped routes that don't pass
+# through the through-running tunnel — RER C/E from Paris, S60/S62 from
+# Stuttgart, etc. That filter made the visible rail network look fragmented.
+# Now we keep ALL routes in the suburban layer so the network reads as
+# continuous, and rely on the polyline-buffer filter below to only thicken
+# the actual central tunnel section.)
+TUNNEL_CONNECTED_REFS = {}
 
 
 # Per-city CENTRAL THROUGH-RUNNING TUNNEL polylines (lon, lat). A tunnel way is
