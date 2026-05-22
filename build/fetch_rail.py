@@ -291,9 +291,13 @@ def fetch_city(slug: str):
         pt = Point(avg_x * 111.0 * cos_lat, avg_y * 111.0)
         return pt.distance(tunnel_line) <= CENTRAL_TUNNEL_BUFFER_KM
 
-    # For each unique (route ref, tunnel/non-tunnel) pair collect deduped way coords.
-    ways_by_key = {}  # (ref, is_tunnel_bool) -> dict of signature -> coords
-    n_tunnel_dropped = 0
+    # Group ways by (ref, is_central_tunnel). KEY POINT: we keep ALL ways in the
+    # output, including peripheral tunnel ways (Wipkingen, Käferberg, etc.).
+    # Otherwise the network would look full of gaps wherever a line briefly went
+    # underground. We just distinguish "central tunnel" ways (the through-running
+    # tunnel polyline we want to highlight) from everything else.
+    ways_by_key = {}  # (ref, is_central_tunnel_bool) -> dict of signature -> coords
+    n_central = 0
     for rel in rels:
         tags = rel.get("tags", {})
         ref = tags.get("ref") or tags.get("name") or str(rel.get("id"))
@@ -311,17 +315,17 @@ def fetch_city(slug: str):
                     dedup.append(p)
             if len(dedup) < 2:
                 continue
-            # Drop tunnel ways that are NOT in the central area
-            if tunnel_flag and not way_in_central_tunnel(dedup):
-                n_tunnel_dropped += 1
-                continue
+            # is_central_tunnel = a tunnel-tagged way that lies on the curated
+            # through-running tunnel polyline. These get the hero treatment.
+            central_flag = tunnel_flag and way_in_central_tunnel(dedup)
+            if central_flag:
+                n_central += 1
             sig_fwd = tuple((p[0], p[1]) for p in dedup)
             sig_rev = tuple(reversed(sig_fwd))
             sig = min(sig_fwd, sig_rev)
-            key = (ref, tunnel_flag)
+            key = (ref, central_flag)
             ways_by_key.setdefault(key, {}).setdefault(sig, dedup)
-    if n_tunnel_dropped:
-        print(f"  central-tunnel filter: dropped {n_tunnel_dropped} peripheral tunnel ways")
+    print(f"  {n_central} central-tunnel ways will get the hero treatment")
 
     # Optional tunnel-only filter (route refs that don't pass through the
     # through-running tunnel — e.g. RER C/E, Stuttgart S60). Applied at the
@@ -336,7 +340,7 @@ def fetch_city(slug: str):
 
     features = []
     refs_seen = set()
-    for (ref, tunnel_flag), ways_for_key in sorted(ways_by_key.items()):
+    for (ref, central_flag), ways_for_key in sorted(ways_by_key.items()):
         opened = history.get(ref) or history.get(ref.lstrip("S0")) or history.get("default")
         features.append({
             "type": "Feature",
@@ -347,15 +351,19 @@ def fetch_city(slug: str):
             "properties": {
                 "ref": ref,
                 "opened_year": opened,
-                "is_tunnel": tunnel_flag,
+                # The widget only uses this property — everything where
+                # is_central_tunnel != true is rendered as a continuous network
+                # line; is_central_tunnel == true is the hero tunnel section
+                # that opens at tunnel_year.
+                "is_central_tunnel": central_flag,
                 "segment_count": len(ways_for_key),
             },
         })
         refs_seen.add(ref)
 
-    n_tunnel_feats = sum(1 for f in features if f["properties"]["is_tunnel"])
-    n_open_feats = sum(1 for f in features if not f["properties"]["is_tunnel"])
-    print(f"  {len(refs_seen)} routes, {n_open_feats} above-ground features, {n_tunnel_feats} tunnel features")
+    n_central_feats = sum(1 for f in features if f["properties"]["is_central_tunnel"])
+    n_other_feats = sum(1 for f in features if not f["properties"]["is_central_tunnel"])
+    print(f"  {len(refs_seen)} routes, {n_other_feats} network features, {n_central_feats} central-tunnel features")
     fc = {"type": "FeatureCollection", "features": features}
     out_path = DATA_DIR / f"{slug}_rail.geojson"
     out_path.write_text(json.dumps(fc))
