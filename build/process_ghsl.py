@@ -94,6 +94,13 @@ CITIES = {
         "label": "Stuttgart",
         "tunnel_year": 1978,  # Stuttgart S-Bahn Stammstrecke (Hbf–Schwabstrasse) opens.
     },
+    "dublin": {
+        "tile": "R3_C18",  # Ireland lies in tile R3_C18 (≈ -10°–0° E × 50°–60° N in Mollweide).
+        "bbox_wgs84": (-6.55, 53.20, -6.05, 53.50),
+        "label": "Dublin",
+        "tunnel_year": 1975,  # Sentinel — Dublin has no through-running tunnel. All growth treated as "no-tunnel".
+        "no_tunnel": True,
+    },
 }
 
 # Three-colour scheme:
@@ -431,6 +438,12 @@ def process_city(slug: str):
             pre_tunnel_index = i
     if pre_tunnel_index < 0:
         pre_tunnel_index = 0  # take the 1975 footprint as the baseline
+    # Special case — `no_tunnel` cities (Dublin counterfactual): the rail corridor
+    # is meaningless, so treat the whole bbox as "in corridor" so every post-1975
+    # pixel becomes CLS_NEAR_RAIL (rendered in yellow). The narrative is "all this
+    # sprawl could have been around rail, but isn't".
+    if cfg.get("no_tunnel"):
+        corridor = np.ones_like(corridor, dtype=bool)
     classes = classify_pixels(first, corridor, pre_tunnel_index)
     print(f"  classes (pre/near/far): "
           f"{int((classes == CLS_PRE).sum())} / "

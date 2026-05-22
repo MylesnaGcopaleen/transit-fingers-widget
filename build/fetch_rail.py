@@ -91,6 +91,10 @@ LINE_HISTORY = {
         "S60": 2010,
         "default": 1978,
     },
+    "dublin": {
+        # DART electrified suburban network. Loops the bay, no through-running tunnel.
+        "default": 1984,
+    },
 }
 
 
@@ -132,6 +136,12 @@ QUERIES = {
         # Exclude Karlsruhe/Rhein-Neckar lines that bleed into the bbox.
         '[out:json][timeout:60];'
         'relation["route"="train"]["network"~"Verkehrs- und Tarifverbund Stuttgart|VVS",i]["ref"~"^S[0-9]+$"](48.4,8.6,49.2,9.7);'
+        'out geom;'
+    ),
+    "dublin": (
+        # DART (Dublin Area Rapid Transit) — electrified suburban loop, no through-running tunnel.
+        '[out:json][timeout:60];'
+        'relation["route"="train"]["name"~"DART",i](53.2,-6.6,53.5,-6.0);'
         'out geom;'
     ),
 }

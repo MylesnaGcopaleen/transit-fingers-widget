@@ -1,0 +1,76 @@
+{
+  "slug": "dublin",
+  "label": "Dublin",
+  "tunnel_year": 1975,
+  "tunnel_predates_dataset": false,
+  "bbox_wgs84": [
+    -6.55,
+    53.2,
+    -6.05,
+    53.5
+  ],
+  "epochs": [
+    1975,
+    1980,
+    1985,
+    1990,
+    1995,
+    2000,
+    2005,
+    2010,
+    2015,
+    2020,
+    2025
+  ],
+  "corridor_buffer_m": 2000,
+  "palette_rgba": {
+    "pre_tunnel": [
+      50,
+      60,
+      75,
+      235
+    ],
+    "near_rail": [
+      252,
+      198,
+      54,
+      255
+    ],
+    "far_rail": [
+      175,
+      178,
+      185,
+      220
+    ]
+  },
+  "area_pre_tunnel_km2": 178.6,
+  "area_near_rail_km2_by_epoch": [
+    0.0,
+    7.75,
+    16.17,
+    23.55,
+    38.64,
+    60.86,
+    71.88,
+    91.57,
+    102.62,
+    111.17,
+    114.93
+  ],
+  "area_far_rail_km2_by_epoch": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "near_rail_share_pct": 100.0,
+  "raster_width": 464,
+  "raster_height": 466
+}
