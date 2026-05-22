@@ -154,40 +154,64 @@ TUNNEL_CONNECTED_REFS = {}
 
 
 # Per-city CENTRAL THROUGH-RUNNING TUNNEL polylines (lon, lat). A tunnel way is
-# kept ONLY if its midpoint is within CENTRAL_TUNNEL_BUFFER_KM of this polyline.
-# This is a sharper filter than "distance from a single centre point" — it
-# excludes peripheral tunnels (Wipkingen, Käferberg, Wiedikon, Tiefenbrunnen,
-# Mühlberg eastern extension, etc.) and keeps only the actual central tunnel.
+# kept ONLY if its midpoint is within CENTRAL_TUNNEL_BUFFER_KM of one of these
+# polylines. This is a sharper filter than "distance from a single centre point"
+# — it follows the actual line of each tunnel, so peripheral tunnels
+# (Wipkingen, Käferberg, Wiedikon, Tiefenbrunnen, Mühlberg eastern extension,
+# etc.) get dropped while the central tunnel chain is preserved.
+#
+# Each value is a LIST OF POLYLINES so a city with multiple through-running
+# tunnels opened together (e.g. Paris 1977: RER A east-west AND RER B north-
+# south) can be represented faithfully.
 CENTRAL_TUNNEL_LINES = {
     "zurich": [
-        # Hirschengrabentunnel (HB → Stadelhofen) + Zürichbergtunnel (Stadelhofen → Stettbach)
-        (8.5403, 47.3781), (8.5478, 47.3667), (8.5700, 47.3850), (8.5995, 47.4023),
+        [
+            # Hirschengrabentunnel (HB → Stadelhofen) + Zürichbergtunnel (Stadelhofen → Stettbach)
+            (8.5403, 47.3781), (8.5478, 47.3667), (8.5700, 47.3850), (8.5995, 47.4023),
+        ],
     ],
     "paris": [
-        # RER A central + B southern link + D — Auber/Étoile → Châtelet → Gare de Lyon → Nation
-        (2.2953, 48.8744), (2.3303, 48.8709), (2.3471, 48.8620),
-        (2.3736, 48.8443), (2.3964, 48.8484),
+        [
+            # RER A east-west: Étoile → Auber → Châtelet → Gare de Lyon → Nation (1977)
+            (2.2953, 48.8744), (2.3303, 48.8709), (2.3471, 48.8620),
+            (2.3736, 48.8443), (2.3964, 48.8484),
+        ],
+        [
+            # RER B/D north-south: Gare du Nord → Magenta → Châtelet-Les Halles →
+            # St-Michel → Luxembourg → Port Royal → Denfert-Rochereau (1977 link)
+            (2.3553, 48.8809), (2.3593, 48.8806), (2.3471, 48.8620),
+            (2.3445, 48.8538), (2.3398, 48.8466), (2.3375, 48.8410),
+            (2.3322, 48.8338),
+        ],
     ],
     "frankfurt": [
-        # Citytunnel: HBf → Taunusanlage → Hauptwache → Konstablerwache (1978)
-        (8.6629, 50.1071), (8.6710, 50.1110), (8.6786, 50.1138), (8.6831, 50.1148),
+        [
+            # Citytunnel: HBf → Taunusanlage → Hauptwache → Konstablerwache (1978)
+            (8.6629, 50.1071), (8.6710, 50.1110), (8.6786, 50.1138), (8.6831, 50.1148),
+        ],
     ],
     "stuttgart": [
-        # Stammstrecke: HBf → Stadtmitte → Feuersee → Schwabstrasse
-        (9.1812, 48.7833), (9.1740, 48.7747), (9.1715, 48.7720), (9.1664, 48.7716),
+        [
+            # Stammstrecke: HBf → Stadtmitte → Feuersee → Schwabstrasse
+            (9.1812, 48.7833), (9.1740, 48.7747), (9.1715, 48.7720), (9.1664, 48.7716),
+        ],
     ],
     "munich": [
-        # Stammstrecke: HBf → Karlsplatz → Marienplatz → Isartor → Ostbahnhof
-        (11.5601, 48.1402), (11.5660, 48.1392), (11.5755, 48.1374),
-        (11.5824, 48.1352), (11.5915, 48.1315), (11.6045, 48.1271),
+        [
+            # Stammstrecke: HBf → Karlsplatz → Marienplatz → Isartor → Ostbahnhof
+            (11.5601, 48.1402), (11.5660, 48.1392), (11.5755, 48.1374),
+            (11.5824, 48.1352), (11.5915, 48.1315), (11.6045, 48.1271),
+        ],
     ],
     "copenhagen": [
-        # Boulevardbanen: Hovedbanegården → Vesterport → Nørreport → Østerport
-        (12.5654, 55.6724), (12.5645, 55.6804), (12.5713, 55.6833), (12.5867, 55.6921),
+        [
+            # Boulevardbanen: Hovedbanegården → Vesterport → Nørreport → Østerport
+            (12.5654, 55.6724), (12.5645, 55.6804), (12.5713, 55.6833), (12.5867, 55.6921),
+        ],
     ],
     "dublin": None,
 }
-CENTRAL_TUNNEL_BUFFER_KM = 0.5  # how far a way's midpoint can be from the polyline
+CENTRAL_TUNNEL_BUFFER_KM = 0.5  # how far a way's midpoint can be from any polyline
 
 
 def call_overpass(query: str) -> dict:
@@ -266,30 +290,35 @@ def fetch_city(slug: str):
         return t in ("yes", "building_passage")
 
     # Geographic filter for tunnel ways: only keep ways whose midpoint is within
-    # CENTRAL_TUNNEL_BUFFER_KM of the city's central tunnel polyline. This is
-    # tighter than a radial filter — it follows the actual line of the tunnel,
-    # so peripheral tunnels (Wipkingen, Käferberg, Tiefenbrunnen, etc.) get
-    # dropped while the central tunnel chain is preserved.
+    # CENTRAL_TUNNEL_BUFFER_KM of ANY of the city's central tunnel polylines.
+    # This is tighter than a radial filter — it follows the actual line of each
+    # tunnel, so peripheral tunnels (Wipkingen, Käferberg, Tiefenbrunnen, etc.)
+    # get dropped while the central tunnel chain is preserved. Cities with
+    # multiple through-running tunnels opened together (Paris 1977: RER A east-
+    # west + RER B north-south) get a polyline per tunnel.
     import math
     from shapely.geometry import LineString, Point
-    tunnel_line_wgs84 = CENTRAL_TUNNEL_LINES.get(slug)
-    if tunnel_line_wgs84:
-        avg_lat = sum(p[1] for p in tunnel_line_wgs84) / len(tunnel_line_wgs84)
+    tunnel_polylines_wgs84 = CENTRAL_TUNNEL_LINES.get(slug)
+    if tunnel_polylines_wgs84:
+        all_pts = [pt for poly in tunnel_polylines_wgs84 for pt in poly]
+        avg_lat = sum(p[1] for p in all_pts) / len(all_pts)
         cos_lat = math.cos(math.radians(avg_lat))
-        # Convert to a local Cartesian frame (km) so distances are euclidean.
-        tunnel_line = LineString([
-            (lon * 111.0 * cos_lat, lat * 111.0) for lon, lat in tunnel_line_wgs84
-        ])
+        # Convert each polyline to a local Cartesian frame (km) so distances
+        # are euclidean.
+        tunnel_lines = [
+            LineString([(lon * 111.0 * cos_lat, lat * 111.0) for lon, lat in poly])
+            for poly in tunnel_polylines_wgs84
+        ]
     else:
-        tunnel_line = None
+        tunnel_lines = []
         cos_lat = 1.0
     def way_in_central_tunnel(dedup_coords):
-        if tunnel_line is None:
+        if not tunnel_lines:
             return False
         avg_x = sum(p[0] for p in dedup_coords) / len(dedup_coords)
         avg_y = sum(p[1] for p in dedup_coords) / len(dedup_coords)
         pt = Point(avg_x * 111.0 * cos_lat, avg_y * 111.0)
-        return pt.distance(tunnel_line) <= CENTRAL_TUNNEL_BUFFER_KM
+        return any(pt.distance(line) <= CENTRAL_TUNNEL_BUFFER_KM for line in tunnel_lines)
 
     # Group ways by (ref, is_central_tunnel). KEY POINT: we keep ALL ways in the
     # output, including peripheral tunnel ways (Wipkingen, Käferberg, etc.).
