@@ -259,25 +259,30 @@ body.is-detail #top-header .header-title { display: block; }
   transform: translate(-50%, -50%);
   opacity: 0;
 }
-.dublin-panel .tile-overlay {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; justify-content: flex-end;
-  padding: 22px 28px;
-  background: linear-gradient(to top, rgba(248,244,237,0.95) 0%, rgba(248,244,237,0.0) 60%);
-  pointer-events: none;
+.dublin-header {
+  margin: 44px 0 22px;
+  max-width: 920px;
 }
-.dublin-panel h2 {
+.dublin-header h2 {
   font-family: 'Du Nord', sans-serif;
   font-weight: 600;
-  font-size: 32px;
+  font-size: clamp(24px, 3vw, 36px);
   color: var(--pi-charcoal-dark);
-  margin-bottom: 5px;
+  line-height: 1.15;
+  margin-bottom: 14px;
 }
-.dublin-panel .dublin-sub {
-  font-size: 15px;
-  font-style: italic;
+.dublin-header p {
+  font-size: 22px;
+  line-height: 1.45;
   color: var(--pi-charcoal);
-  max-width: 520px;
+  max-width: 760px;
+  font-weight: 300;
+}
+.dublin-header p .cta {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 600;
+  color: var(--pi-charcoal-dark);
 }
 
 .grid-footer {
@@ -436,13 +441,14 @@ body.is-detail #top-header .header-title { display: block; }
 
     <div class="city-grid" id="city-grid"></div>
 
+    <header class="dublin-header">
+      <h2>Dublin — the counterfactual</h2>
+      <p>No through-running tunnel. Only 14% of new homes built since 1975 sit within 2 km of electrified rail; the rest scattered across the metro region.<br><span class="cta">Click for the full picture.</span></p>
+    </header>
+
     <div class="dublin-panel" data-city="dublin">
       <div class="tile-canvas" id="tile-canvas-dublin"></div>
       <div class="tile-stat" style="top:16px; right:18px; position:absolute; background:var(--pi-yellow); color:var(--pi-charcoal-dark); font-family:'Du Nord',sans-serif; font-weight:600; font-size:15px; padding:5px 11px; border-radius:5px; line-height:1; letter-spacing:-0.01em;">Only 14% near rail</div>
-      <div class="tile-overlay">
-        <h2>Dublin — the counterfactual</h2>
-        <div class="dublin-sub">No through-running tunnel. Only 14% of new homes built since 1975 sit within walking distance of rail; the rest scattered across the metro region. Click for the full picture.</div>
-      </div>
     </div>
 
     <footer class="grid-footer">
@@ -949,11 +955,15 @@ function renderMilestoneShells(slug) {
 function buildLegend(slug) {
   const cfg = CITIES[slug];
   const el = document.getElementById('detail-legend');
+  // For pre-1975 tunnels (Copenhagen 1934, Munich 1972) the dataset only goes
+  // back to 1975, so the honest "built since" year is 1975. Otherwise it's the
+  // tunnel year.
+  const sinceYear = (!cfg.tunnel_year || cfg.tunnel_year < 1975) ? 1975 : cfg.tunnel_year;
   if (cfg.is_dublin) {
     el.innerHTML = `
       <div class="legend-title">First built up by…</div>
       <div class="legend-row"><span class="legend-swatch" style="background:#555555;"></span>Built by 1975</div>
-      <div class="legend-row"><span class="legend-swatch" style="background:#FFC633;"></span>Built since 1975, within 2km of rail</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#FFC633;"></span>Built since 1975, within 2km of electrified rail</div>
       <div class="legend-row"><span class="legend-swatch" style="background:#D4D4D4;"></span>Built since 1975, further from rail</div>
       <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--pi-mid-grey);">
         <span style="display:inline-block;width:14px;height:0;border-top:2px solid var(--pi-charcoal-dark);"></span> DART (electrified suburban rail)
@@ -961,14 +971,14 @@ function buildLegend(slug) {
   } else {
     el.innerHTML = `
       <div class="legend-title">First built up by…</div>
-      <div class="legend-row"><span class="legend-swatch" style="background:#555555;"></span>Built before tunnel</div>
-      <div class="legend-row"><span class="legend-swatch" style="background:#FFC633;"></span>Built after tunnel, within 2km of rail</div>
-      <div class="legend-row"><span class="legend-swatch" style="background:#D4D4D4;"></span>Built after tunnel, further from rail</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#555555;"></span>Built before ${sinceYear}</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#FFC633;"></span>Built since ${sinceYear}, within 2km of electrified rail</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#D4D4D4;"></span>Built since ${sinceYear}, further from rail</div>
       <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--pi-mid-grey);">
         <span style="display:inline-block;width:14px;height:0;border-top:4px solid var(--pi-charcoal-dark);border-radius:1px;"></span> Through-running tunnel
       </div>
       <div class="legend-row">
-        <span style="display:inline-block;width:14px;height:0;border-top:2px solid var(--pi-charcoal-dark);"></span> Suburban rail lines
+        <span style="display:inline-block;width:14px;height:0;border-top:2px solid var(--pi-charcoal-dark);"></span> Other rail lines
       </div>`;
   }
 }
