@@ -745,13 +745,17 @@ function addCityLayersToDetail(slug) {
     }
   }
   // Rail: one GeoJSON source per city; features have `is_tunnel` property.
-  // Render two layer pairs from the same source:
-  //   - suburban (is_tunnel != true): always visible
-  //   - tunnel   (is_tunnel == true): hidden before tunnel_year, double thickness
+  // Three layer pairs (so the network always looks intact):
+  //   1. Suburban (is_tunnel != true) — thin, always visible
+  //   2. Tunnel-thin (is_tunnel == true) — same thin width as suburban, always
+  //      visible. The network reads continuously through the centre.
+  //   3. Tunnel-hero (is_tunnel == true) — double thickness, opacity 0 before
+  //      tunnel_year, fades up to 1 at tunnel_year. The central tunnel
+  //      "thickens" as the dramatic moment.
   const railId = `${slug}_rail`;
   if (!detailMap.getSource(railId)) {
     detailMap.addSource(railId, { type: 'geojson', data: `data/${slug}_rail.geojson` });
-    // Suburban — above-ground portions only
+    // 1. Suburban
     detailMap.addLayer({ id: `${railId}_sub_casing`, type: 'line', source: railId,
       filter: ['!=', ['get', 'is_tunnel'], true],
       paint: { 'line-color': '#ffffff', 'line-width': 4, 'line-opacity': 0.95 },
@@ -760,12 +764,21 @@ function addCityLayersToDetail(slug) {
       filter: ['!=', ['get', 'is_tunnel'], true],
       paint: { 'line-color': '#1a1f2e', 'line-width': 2, 'line-opacity': 0.95 },
       layout: { visibility: 'none' } });
-    // Tunnel — subterranean portions, double thickness, fades in at tunnel_year
-    detailMap.addLayer({ id: `${railId}_tun_casing`, type: 'line', source: railId,
+    // 2. Tunnel-thin (always visible — makes the network look intact)
+    detailMap.addLayer({ id: `${railId}_tun_thin_casing`, type: 'line', source: railId,
+      filter: ['==', ['get', 'is_tunnel'], true],
+      paint: { 'line-color': '#ffffff', 'line-width': 4, 'line-opacity': 0.95 },
+      layout: { visibility: 'none' } });
+    detailMap.addLayer({ id: `${railId}_tun_thin_line`, type: 'line', source: railId,
+      filter: ['==', ['get', 'is_tunnel'], true],
+      paint: { 'line-color': '#1a1f2e', 'line-width': 2, 'line-opacity': 0.95 },
+      layout: { visibility: 'none' } });
+    // 3. Tunnel-hero (thick, fades in at tunnel_year)
+    detailMap.addLayer({ id: `${railId}_tun_hero_casing`, type: 'line', source: railId,
       filter: ['==', ['get', 'is_tunnel'], true],
       paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0 },
       layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' } });
-    detailMap.addLayer({ id: `${railId}_tun_line`, type: 'line', source: railId,
+    detailMap.addLayer({ id: `${railId}_tun_hero_line`, type: 'line', source: railId,
       filter: ['==', ['get', 'is_tunnel'], true],
       paint: { 'line-color': '#1a1f2e', 'line-width': 4, 'line-opacity': 0 },
       layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' } });
@@ -782,14 +795,18 @@ function setLayerVisibilities(activeSlug) {
         detailMap.setPaintProperty(lid, 'raster-opacity', 0);
       }
     }
-    // Suburban rail: visible whenever this city is active
-    for (const id of [`${slug}_rail_sub_casing`, `${slug}_rail_sub_line`]) {
+    // Suburban + tunnel-thin: always visible whenever this city is active —
+    // the entire network reads as continuous (intact) at all times.
+    for (const id of [
+      `${slug}_rail_sub_casing`, `${slug}_rail_sub_line`,
+      `${slug}_rail_tun_thin_casing`, `${slug}_rail_tun_thin_line`,
+    ]) {
       if (detailMap.getLayer(id)) {
         detailMap.setLayoutProperty(id, 'visibility', isActive ? 'visible' : 'none');
       }
     }
-    // Tunnel rail: visible when active, opacity controlled by setMapAtYear
-    for (const id of [`${slug}_rail_tun_casing`, `${slug}_rail_tun_line`]) {
+    // Tunnel-hero: visible when active, opacity controlled by setMapAtYear
+    for (const id of [`${slug}_rail_tun_hero_casing`, `${slug}_rail_tun_hero_line`]) {
       if (detailMap.getLayer(id)) {
         detailMap.setLayoutProperty(id, 'visibility', isActive ? 'visible' : 'none');
         detailMap.setPaintProperty(id, 'line-opacity', 0);
@@ -852,21 +869,22 @@ function setMapAtYear(slug, currentYear) {
     }
     detailMap.setPaintProperty(lid, 'raster-opacity', op);
   }
-  // Tunnel fades in around tunnel_year. Dublin has no tunnel_year → stays hidden.
-  const casingId = `${slug}_rail_tun_casing`;
-  const lineId   = `${slug}_rail_tun_line`;
-  if (cfg.tunnel_year && detailMap.getLayer(lineId)) {
+  // Tunnel-hero overlay fades in around tunnel_year. Below it, the thin tunnel
+  // layer stays visible always so the network looks intact.
+  const heroCasingId = `${slug}_rail_tun_hero_casing`;
+  const heroLineId   = `${slug}_rail_tun_hero_line`;
+  if (cfg.tunnel_year && detailMap.getLayer(heroLineId)) {
     const half = 1.5;
     let tunnelOp;
     if (currentYear < cfg.tunnel_year - half) tunnelOp = 0;
     else if (currentYear > cfg.tunnel_year + half) tunnelOp = 1;
     else tunnelOp = (currentYear - (cfg.tunnel_year - half)) / (2 * half);
-    detailMap.setPaintProperty(casingId, 'line-opacity', tunnelOp * 0.9);
-    detailMap.setPaintProperty(lineId, 'line-opacity', tunnelOp);
-  } else if (detailMap.getLayer(lineId)) {
-    // Dublin: no tunnel — never show the tunnel layer (Phoenix Park etc. would be confusing)
-    detailMap.setPaintProperty(casingId, 'line-opacity', 0);
-    detailMap.setPaintProperty(lineId, 'line-opacity', 0);
+    detailMap.setPaintProperty(heroCasingId, 'line-opacity', tunnelOp * 0.9);
+    detailMap.setPaintProperty(heroLineId, 'line-opacity', tunnelOp);
+  } else if (detailMap.getLayer(heroLineId)) {
+    // Dublin: no tunnel — never thicken the layer
+    detailMap.setPaintProperty(heroCasingId, 'line-opacity', 0);
+    detailMap.setPaintProperty(heroLineId, 'line-opacity', 0);
   }
 }
 
