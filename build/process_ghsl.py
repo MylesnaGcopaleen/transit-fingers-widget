@@ -60,13 +60,13 @@ BASE_URL = (
 CITIES = {
     "copenhagen": {
         "tile": "R3_C19",
-        "bbox_wgs84": (12.00, 55.45, 12.95, 55.95),
+        "bbox_wgs84": (12.28, 55.58, 12.78, 55.85),
         "label": "Copenhagen",
         "tunnel_year": 1934,  # Boulevardbanen electrified for S-tog. GHSL starts 1975 — all data is post-tunnel.
     },
     "munich": {
         "tile": "R4_C19",
-        "bbox_wgs84": (11.00, 47.90, 12.10, 48.45),
+        "bbox_wgs84": (11.25, 47.95, 11.90, 48.32),
         "label": "Munich",
         "tunnel_year": 1972,  # Stammstrecke S-Bahn tunnel. GHSL starts 1975, ~3yr post-tunnel.
     },
@@ -78,19 +78,19 @@ CITIES = {
     },
     "paris": {
         "tile": "R4_C19",
-        "bbox_wgs84": (2.05, 48.68, 2.65, 49.03),
+        "bbox_wgs84": (1.85, 48.55, 2.95, 49.15),
         "label": "Paris",
-        "tunnel_year": 1977,  # RER A Châtelet-Les Halles through-running tunnel. RER B southern link 1981.
+        "tunnel_year": 1977,  # RER A Châtelet-Les Halles through-running tunnel. Includes RER B (1981) + D (1987).
     },
     "frankfurt": {
         "tile": "R4_C19",
-        "bbox_wgs84": (8.40, 49.95, 8.95, 50.28),
+        "bbox_wgs84": (8.42, 49.98, 8.88, 50.25),
         "label": "Frankfurt",
         "tunnel_year": 1978,  # Citytunnel Frankfurt — S-Bahn through-running.
     },
     "stuttgart": {
         "tile": "R4_C19",
-        "bbox_wgs84": (8.95, 48.63, 9.40, 48.93),
+        "bbox_wgs84": (9.00, 48.65, 9.40, 48.93),
         "label": "Stuttgart",
         "tunnel_year": 1978,  # Stuttgart S-Bahn Stammstrecke (Hbf–Schwabstrasse) opens.
     },

@@ -48,7 +48,9 @@
   --pi-light-grey:    #FAFAFA;
   --pi-mid-grey:      #D4D4D4;
   --pi-dark-grey:     #AAAAAA;
-  --pi-paper:         #F8F4ED;
+  --pi-pink:          #FBE5DA;   /* soft pink — city-detail and Dublin caption background */
+  --pi-pink-deeper:   #F5D5C6;   /* slightly deeper, for borders against the pink */
+  --pi-paper:         #FAFAFA;
   --pi-ink:           #1B1F23;
 }
 
@@ -68,24 +70,65 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
 
 #app { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* ----- PI logo (always visible top-left) ----- */
-.pi-logo {
+/* ----- Top header bar (logo + thin charcoal line, scrolls away) ----- */
+#top-header {
   position: fixed;
-  top: 22px;
-  left: 28px;
+  top: 0; left: 0; right: 0;
+  height: 78px;
+  background: var(--pi-paper);
+  border-bottom: 1px solid var(--pi-charcoal);
   z-index: 100;
-  height: 46px;
-  pointer-events: auto;
-  user-select: none;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 32px;
+  transition: transform 0.25s ease;
+  will-change: transform;
 }
-.pi-logo img { height: 100%; display: block; }
+#top-header .logo-wrap {
+  flex-shrink: 0;
+  display: block;
+  text-decoration: none;
+}
+#top-header .logo-wrap img { height: 46px; display: block; }
+#top-header .back-link {
+  font-family: 'TWK Lausanne', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--pi-charcoal);
+  text-decoration: none;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#top-header .back-link:hover { background: var(--pi-mid-grey); color: var(--pi-charcoal-dark); }
+#top-header .header-title {
+  margin-left: auto;
+  font-family: 'Du Nord', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--pi-charcoal-dark);
+  text-align: right;
+  display: none;
+  line-height: 1.25;
+}
+#top-header .header-title .accent {
+  background: linear-gradient(180deg, transparent 60%, var(--pi-yellow) 60%);
+  padding: 0 4px;
+}
+body.is-detail #top-header .back-link { display: inline-flex; }
+body.is-detail #top-header .header-title { display: block; }
 
 /* ===========================================================
    GRID VIEW (landing)
    =========================================================== */
 .grid-view {
   display: none;
-  padding: 60px 36px 36px;
+  padding: 110px 36px 36px;    /* top padding clears the fixed top-header */
   max-width: 1480px;
   margin: 0 auto;
   width: 100%;
@@ -251,58 +294,17 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
    =========================================================== */
 .detail-view {
   display: none;
-  height: 100vh;
-  overflow: hidden;
-  flex-direction: column;
-}
-.detail-view.active { display: flex; }
-
-.detail-topbar {
-  height: 60px;
-  padding: 0 28px 0 96px;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid var(--pi-mid-grey);
-  background: var(--pi-light-grey);
-  flex-shrink: 0;
-}
-.back-link {
-  font-family: 'TWK Lausanne', sans-serif;
-  font-weight: 400;
-  font-size: 13px;
-  color: var(--pi-charcoal);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.back-link:hover { background: var(--pi-mid-grey); color: var(--pi-charcoal-dark); }
-.back-link .arrow { font-size: 16px; line-height: 1; }
-.detail-title {
-  margin-left: auto;
-  font-family: 'Du Nord', sans-serif;
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--pi-charcoal-dark);
-  letter-spacing: 0;
-  text-align: right;
-}
-.detail-title .accent { background: linear-gradient(180deg, transparent 60%, var(--pi-yellow) 60%); padding: 0 4px; }
-
-.detail-body {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 380px;
+  position: fixed;
+  top: 78px;                       /* clears the fixed top-header */
+  left: 0; right: 0; bottom: 0;
   overflow: hidden;
 }
+.detail-view.active { display: grid; grid-template-columns: 1fr 400px; }
+
 .detail-map-wrap {
   position: relative;
   overflow: hidden;
-  background: var(--pi-paper);
+  background: var(--pi-pink);
 }
 #detail-map { position: absolute; inset: 0; }
 
@@ -323,9 +325,9 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
 .legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
 
 .detail-panel {
-  background: var(--pi-paper);
-  border-left: 1px solid var(--pi-mid-grey);
-  padding: 36px 32px;
+  background: var(--pi-pink);
+  border-left: 1px solid var(--pi-pink-deeper);
+  padding: 40px 36px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -390,29 +392,36 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
   font-weight: 400;
   font-size: 12px;
   background: transparent;
-  border: 1px solid var(--pi-mid-grey);
+  border: 1px solid var(--pi-pink-deeper);
   color: var(--pi-charcoal);
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.02em;
 }
-.replay-btn:hover { background: var(--pi-mid-grey); color: var(--pi-charcoal-dark); }
+.replay-btn:hover { background: var(--pi-pink-deeper); color: var(--pi-charcoal-dark); }
 
 @media (max-width: 900px) {
   .city-grid { grid-template-columns: repeat(2, 1fr); }
-  .detail-body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-  .detail-panel { border-left: 0; border-top: 1px solid var(--pi-mid-grey); padding: 20px 22px; }
+  .detail-view.active { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .detail-panel { border-left: 0; border-top: 1px solid var(--pi-pink-deeper); padding: 24px 22px; }
   .milestone .year { font-size: 44px; }
   .milestone.impact .year { font-size: 52px; }
-  .pi-logo { top: 14px; left: 16px; height: 22px; }
-  .detail-topbar { padding-left: 80px; }
+  #top-header { height: 64px; padding: 0 18px; }
+  #top-header .logo-wrap img { height: 36px; }
+  #top-header .header-title { display: none !important; }
+  .grid-view { padding: 90px 18px 18px; }
+  .detail-view { top: 64px; }
 }
 </style>
 </head>
 <body>
 
-<a class="pi-logo" href="#" id="logo-link"><img src="assets/pi-logo-charcoal.png" alt="Progress Ireland"></a>
+<header id="top-header">
+  <a class="logo-wrap" href="#" id="logo-link"><img src="assets/pi-logo-charcoal.png" alt="Progress Ireland"></a>
+  <a class="back-link" id="back-link"><span class="arrow">←</span>&nbsp;All cities</a>
+  <div class="header-title">The <span class="accent">Unlock</span>: extra housing enabled by through-running rail tunnels</div>
+</header>
 
 <div id="app">
   <!-- =================== GRID LANDING =================== -->
@@ -442,31 +451,23 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
 
   <!-- =================== CITY DETAIL =================== -->
   <section class="detail-view" id="view-detail">
-    <div class="detail-topbar">
-      <a class="back-link" id="back-link"><span class="arrow">←</span> All cities</a>
-      <div class="detail-title">The <span class="accent">Unlock</span>: extra housing enabled by through-running rail tunnels</div>
+    <div class="detail-map-wrap">
+      <div id="detail-map"></div>
+      <div class="detail-legend" id="detail-legend"></div>
     </div>
 
-    <div class="detail-body">
-      <div class="detail-map-wrap">
-        <div id="detail-map"></div>
-        <div class="detail-legend" id="detail-legend"></div>
+    <aside class="detail-panel">
+      <div class="city-heading">
+        <h1 id="detail-city-name">Zürich</h1>
+        <div class="tunnel-name" id="detail-tunnel-name">S-Bahn Zürich · Hirschengrabentunnel + Zürichberg, 1990</div>
       </div>
 
-      <aside class="detail-panel">
-        <div class="city-heading">
-          <h1 id="detail-city-name">Zürich</h1>
-          <div class="tunnel-name" id="detail-tunnel-name">S-Bahn Zürich · Hirschengrabentunnel + Zürichberg, 1990</div>
-        </div>
+      <div class="milestones" id="milestones"></div>
 
-        <div class="milestones" id="milestones"></div>
-
-        <div class="replay-row">
-          <button class="replay-btn" id="replay-btn">↻ Replay</button>
-          <span>15-second animation</span>
-        </div>
-      </aside>
-    </div>
+      <div class="replay-row">
+        <button class="replay-btn" id="replay-btn">↻ Replay</button>
+      </div>
+    </aside>
   </section>
 </div>
 
@@ -481,31 +482,8 @@ const ANIM_DURATION_MS = 15000;      // Total city-detail animation length
 const ANIM_START_YEAR = EPOCHS[0];
 const ANIM_END_YEAR = EPOCHS[EPOCHS.length - 1];
 
-// ----- Tunnel paths (real-world subterranean alignments) -----
-const TUNNELS = {
-  zurich: [
-    [8.5403, 47.3781], [8.5440, 47.3735], [8.5478, 47.3667],
-    [8.5610, 47.3760], [8.5780, 47.3905], [8.5995, 47.4023],
-  ],
-  paris: [
-    [2.2953, 48.8744], [2.3303, 48.8709], [2.3370, 48.8665],
-    [2.3471, 48.8620], [2.3736, 48.8443], [2.3964, 48.8484],
-  ],
-  frankfurt: [
-    [8.6629, 50.1071], [8.6710, 50.1110], [8.6786, 50.1138],
-    [8.6829, 50.1147], [8.6964, 50.1167], [8.7203, 50.1115],
-  ],
-  stuttgart: [
-    [9.1812, 48.7833], [9.1740, 48.7747], [9.1715, 48.7720], [9.1664, 48.7716],
-  ],
-  munich: [
-    [11.5601, 48.1402], [11.5660, 48.1392], [11.5755, 48.1374],
-    [11.5824, 48.1352], [11.5915, 48.1315], [11.6045, 48.1271],
-  ],
-  copenhagen: [
-    [12.5654, 55.6726], [12.5645, 55.6804], [12.5713, 55.6831], [12.5867, 55.6921],
-  ],
-};
+// Tunnel rendering uses OSM data — features in the rail GeoJSON tagged
+// `is_tunnel: true` are the actual subterranean ways. No hand-drawn coordinates.
 
 // ----- City config -----
 const CITIES = {
@@ -521,47 +499,47 @@ const CITIES = {
   paris: {
     label: 'Paris',
     tunnelName: 'RER A · Châtelet-Les Halles, 1977',
-    bounds: [[2.05, 48.68], [2.65, 49.03]],
+    bounds: [[1.85, 48.55], [2.95, 49.15]],
     tunnel_year: 1977,
     construction_years: [1971, 1977],
-    homesLabel: '290,000 homes',
-    pctLabel: '40%',
+    homesLabel: '610,000 homes',
+    pctLabel: '31%',
   },
   frankfurt: {
     label: 'Frankfurt',
     tunnelName: 'S-Bahn Citytunnel, 1978',
-    bounds: [[8.40, 49.95], [8.95, 50.28]],
+    bounds: [[8.42, 49.98], [8.88, 50.25]],
     tunnel_year: 1978,
     construction_years: [1969, 1978],
-    homesLabel: '230,000 homes',
-    pctLabel: '60%',
+    homesLabel: '200,000 homes',
+    pctLabel: '65%',
   },
   stuttgart: {
     label: 'Stuttgart',
     tunnelName: 'S-Bahn Stammstrecke · Hbf–Schwabstrasse, 1978',
-    bounds: [[8.95, 48.63], [9.40, 48.93]],
+    bounds: [[9.00, 48.65], [9.40, 48.93]],
     tunnel_year: 1978,
     construction_years: [1971, 1978],
-    homesLabel: '170,000 homes',
-    pctLabel: '50%',
+    homesLabel: '160,000 homes',
+    pctLabel: '56%',
   },
   munich: {
     label: 'Munich',
     tunnelName: 'S-Bahn Stammstrecke, 1972',
-    bounds: [[11.30, 47.95], [11.85, 48.30]],
+    bounds: [[11.25, 47.95], [11.90, 48.32]],
     tunnel_year: 1972,
     construction_years: [1965, 1972],
-    homesLabel: '620,000 homes',
-    pctLabel: '52%',
+    homesLabel: '440,000 homes',
+    pctLabel: '70%',
   },
   copenhagen: {
     label: 'Copenhagen',
     tunnelName: 'Boulevardbanen S-tog, 1934',
-    bounds: [[12.25, 55.55], [12.80, 55.85]],
+    bounds: [[12.28, 55.58], [12.78, 55.85]],
     tunnel_year: 1934,
     construction_years: [1911, 1934],
-    homesLabel: '240,000 homes',
-    pctLabel: '50%',
+    homesLabel: '140,000 homes',
+    pctLabel: '74%',
   },
   dublin: {
     label: 'Dublin',
@@ -591,15 +569,31 @@ window.addEventListener('hashchange', renderRoute);
 function renderRoute() {
   const slug = currentRoute();
   if (slug) {
+    document.body.classList.add('is-detail');
     document.getElementById('view-grid').classList.remove('active');
     document.getElementById('view-detail').classList.add('active');
+    // Detail view is fixed-positioned at top:78px — no scroll, so reset header transform
+    document.getElementById('top-header').style.transform = 'translateY(0)';
     openCityDetail(slug);
   } else {
+    document.body.classList.remove('is-detail');
     document.getElementById('view-detail').classList.remove('active');
     document.getElementById('view-grid').classList.add('active');
     startGridAnimations();
   }
 }
+
+// Hide the top header progressively as the user scrolls the grid view.
+(() => {
+  const HIDE_MAX = 88;  // px to translate up
+  const update = () => {
+    if (document.body.classList.contains('is-detail')) return;
+    const y = window.scrollY;
+    const offset = Math.min(y, HIDE_MAX);
+    document.getElementById('top-header').style.transform = `translateY(${-offset}px)`;
+  };
+  window.addEventListener('scroll', update, { passive: true });
+})();
 
 // ===========================================================
 // GRID TILES — cross-fade through cumulative PNGs in a loop
@@ -747,35 +741,36 @@ function addCityLayersToDetail(slug) {
       detailMap.addLayer({ id: sid, type: 'raster', source: sid, paint: { 'raster-opacity': 0, 'raster-fade-duration': 0 } });
     }
   }
-  // Suburban rail
+  // Rail: one GeoJSON source per city; features have `is_tunnel` property.
+  // Render two layer pairs from the same source:
+  //   - suburban (is_tunnel != true): always visible
+  //   - tunnel   (is_tunnel == true): hidden before tunnel_year, double thickness
   const railId = `${slug}_rail`;
   if (!detailMap.getSource(railId)) {
     detailMap.addSource(railId, { type: 'geojson', data: `data/${slug}_rail.geojson` });
-    detailMap.addLayer({ id: `${railId}_casing`, type: 'line', source: railId,
-      paint: { 'line-color': '#ffffff', 'line-width': 4, 'line-opacity': 0.95 }, layout: { visibility: 'none' } });
-    detailMap.addLayer({ id: `${railId}_line`, type: 'line', source: railId,
-      paint: { 'line-color': '#1a1f2e', 'line-width': 2, 'line-opacity': 0.95 }, layout: { visibility: 'none' } });
-  }
-  // Tunnel hero line
-  const tunnelCoords = TUNNELS[slug];
-  if (tunnelCoords) {
-    const tsid = `${slug}_tunnel`;
-    if (!detailMap.getSource(tsid)) {
-      detailMap.addSource(tsid, { type: 'geojson',
-        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: tunnelCoords }, properties: {} } });
-      detailMap.addLayer({ id: `${tsid}_casing`, type: 'line', source: tsid,
-        paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0 },
-        layout: { 'line-cap': 'round', 'line-join': 'round' } });
-      detailMap.addLayer({ id: `${tsid}_line`, type: 'line', source: tsid,
-        paint: { 'line-color': '#1a1f2e', 'line-width': 4, 'line-opacity': 0 },
-        layout: { 'line-cap': 'round', 'line-join': 'round' } });
-    }
+    // Suburban — above-ground portions only
+    detailMap.addLayer({ id: `${railId}_sub_casing`, type: 'line', source: railId,
+      filter: ['!=', ['get', 'is_tunnel'], true],
+      paint: { 'line-color': '#ffffff', 'line-width': 4, 'line-opacity': 0.95 },
+      layout: { visibility: 'none' } });
+    detailMap.addLayer({ id: `${railId}_sub_line`, type: 'line', source: railId,
+      filter: ['!=', ['get', 'is_tunnel'], true],
+      paint: { 'line-color': '#1a1f2e', 'line-width': 2, 'line-opacity': 0.95 },
+      layout: { visibility: 'none' } });
+    // Tunnel — subterranean portions, double thickness, fades in at tunnel_year
+    detailMap.addLayer({ id: `${railId}_tun_casing`, type: 'line', source: railId,
+      filter: ['==', ['get', 'is_tunnel'], true],
+      paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0 },
+      layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' } });
+    detailMap.addLayer({ id: `${railId}_tun_line`, type: 'line', source: railId,
+      filter: ['==', ['get', 'is_tunnel'], true],
+      paint: { 'line-color': '#1a1f2e', 'line-width': 4, 'line-opacity': 0 },
+      layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' } });
   }
   detailLayersAdded.add(slug);
 }
 
 function setLayerVisibilities(activeSlug) {
-  // Hide everything we have for other cities
   for (const slug of detailLayersAdded) {
     const isActive = (slug === activeSlug);
     for (const year of EPOCHS) {
@@ -784,12 +779,14 @@ function setLayerVisibilities(activeSlug) {
         detailMap.setPaintProperty(lid, 'raster-opacity', 0);
       }
     }
-    for (const id of [`${slug}_rail_casing`, `${slug}_rail_line`]) {
+    // Suburban rail: visible whenever this city is active
+    for (const id of [`${slug}_rail_sub_casing`, `${slug}_rail_sub_line`]) {
       if (detailMap.getLayer(id)) {
         detailMap.setLayoutProperty(id, 'visibility', isActive ? 'visible' : 'none');
       }
     }
-    for (const id of [`${slug}_tunnel_casing`, `${slug}_tunnel_line`]) {
+    // Tunnel rail: visible when active, opacity controlled by setMapAtYear
+    for (const id of [`${slug}_rail_tun_casing`, `${slug}_rail_tun_line`]) {
       if (detailMap.getLayer(id)) {
         detailMap.setLayoutProperty(id, 'visibility', isActive ? 'visible' : 'none');
         detailMap.setPaintProperty(id, 'line-opacity', 0);
@@ -825,17 +822,21 @@ function setMapAtYear(slug, currentYear) {
     else op = 0;
     detailMap.setPaintProperty(lid, 'raster-opacity', op);
   }
-  // Tunnel fades in over a 1.5-year-equivalent window centred on tunnel_year
-  if (cfg.tunnel_year) {
+  // Tunnel fades in around tunnel_year. Dublin has no tunnel_year → stays hidden.
+  const casingId = `${slug}_rail_tun_casing`;
+  const lineId   = `${slug}_rail_tun_line`;
+  if (cfg.tunnel_year && detailMap.getLayer(lineId)) {
     const half = 1.5;
     let tunnelOp;
     if (currentYear < cfg.tunnel_year - half) tunnelOp = 0;
     else if (currentYear > cfg.tunnel_year + half) tunnelOp = 1;
     else tunnelOp = (currentYear - (cfg.tunnel_year - half)) / (2 * half);
-    if (detailMap.getLayer(`${slug}_tunnel_casing`)) {
-      detailMap.setPaintProperty(`${slug}_tunnel_casing`, 'line-opacity', tunnelOp * 0.9);
-      detailMap.setPaintProperty(`${slug}_tunnel_line`, 'line-opacity', tunnelOp);
-    }
+    detailMap.setPaintProperty(casingId, 'line-opacity', tunnelOp * 0.9);
+    detailMap.setPaintProperty(lineId, 'line-opacity', tunnelOp);
+  } else if (detailMap.getLayer(lineId)) {
+    // Dublin: no tunnel — never show the tunnel layer (Phoenix Park etc. would be confusing)
+    detailMap.setPaintProperty(casingId, 'line-opacity', 0);
+    detailMap.setPaintProperty(lineId, 'line-opacity', 0);
   }
 }
 
@@ -858,7 +859,7 @@ function buildMilestones(slug) {
         impact: true,
         year: cfg.homesLabel.split(' ')[0],     // "59,000"
         yearSuffix: 'homes',
-        caption: `Only ${cfg.pctLabel} of new homes built since 1975 are within 2 km of rail. The rest scattered across the metro region.`,
+        caption: `Only ${cfg.pctLabel} of new homes built since 1975 are within 2 km of electrified rail. The rest scattered across the metro region.`,
       },
     ];
   }
@@ -884,7 +885,7 @@ function buildMilestones(slug) {
       impact: true,
       year: `${cfg.homesLabel.split(' ')[0]}`,        // "330,000"
       yearSuffix: 'homes',
-      caption: `Built within 2 km of the through-running tunnel since ${tunnel} — ${cfg.pctLabel} of all new homes in this period.`,
+      caption: `${cfg.pctLabel} of new homes built since ${tunnel} are within 2 km of electrified rail.`,
     },
   ];
 }

@@ -99,50 +99,47 @@ LINE_HISTORY = {
 
 
 # Overpass queries — narrow filters keep response sizes manageable.
-# Pendeltåg/S-tog/S-Bahn tagging varies, so each query is hand-tuned.
+# Each query fetches the route relations (with member geometry) AND each
+# member way's tags (especially `tunnel=yes`). The output is two element types:
+#   - relations: with members[].geometry (no member tags)
+#   - ways:      with tags (no geometry)
+# We join the two by way id to split rail into tunnel vs non-tunnel segments.
 QUERIES = {
     "copenhagen": (
-        '[out:json][timeout:60];'
-        'relation["route"="light_rail"]["name"~"S-tog"](55.3,11.8,56.0,12.9);'
-        'out geom;'
+        '[out:json][timeout:90];'
+        'relation["route"="light_rail"]["name"~"S-tog"](55.3,11.8,56.0,12.9)->.r;'
+        '.r out geom; way(r.r); out tags;'
     ),
     "munich": (
-        '[out:json][timeout:60];'
-        'relation["route"="train"]["ref"~"^S[0-9]+$"](47.6,10.7,48.7,12.3);'
-        'out geom;'
+        '[out:json][timeout:90];'
+        'relation["route"="train"]["ref"~"^S[0-9]+$"](47.6,10.7,48.7,12.3)->.r;'
+        '.r out geom; way(r.r); out tags;'
     ),
     "zurich": (
-        # Zurich S-Bahn — main lines only (S1-S16). Branch refs above S16 add
-        # visual noise without changing the network shape.
-        '[out:json][timeout:60];'
-        'relation["route"="train"]["network"~"ZVV|S-Bahn Zürich",i]["ref"~"^S([1-9]|1[0-6])$"](47.0,8.0,47.8,9.1);'
-        'out geom;'
+        '[out:json][timeout:90];'
+        'relation["route"="train"]["network"~"ZVV|S-Bahn Zürich",i]["ref"~"^S([1-9]|1[0-6])$"](47.0,8.0,47.8,9.1)->.r;'
+        '.r out geom; way(r.r); out tags;'
     ),
     "paris": (
-        # Paris RER — single-letter refs A through E. Plus a fallback by name.
-        '[out:json][timeout:90];'
+        '[out:json][timeout:120];'
         '(relation["route"="train"]["ref"~"^[A-E]$"]["name"~"RER"](48.4,1.6,49.2,3.2);'
-        'relation["route"="subway"]["ref"~"^RER [A-E]$"](48.4,1.6,49.2,3.2);'
-        ');out geom;'
+        'relation["route"="subway"]["ref"~"^RER [A-E]$"](48.4,1.6,49.2,3.2);)->.r;'
+        '.r out geom; way(r.r); out tags;'
     ),
     "frankfurt": (
-        # Frankfurt S-Bahn — OSM network tag is "Rhein-Main-Verkehrsverbund".
-        '[out:json][timeout:60];'
-        'relation["route"="train"]["network"~"Rhein-Main",i]["ref"~"^S[0-9]+$"](49.8,8.0,50.5,9.2);'
-        'out geom;'
+        '[out:json][timeout:90];'
+        'relation["route"="train"]["network"~"Rhein-Main",i]["ref"~"^S[0-9]+$"](49.8,8.0,50.5,9.2)->.r;'
+        '.r out geom; way(r.r); out tags;'
     ),
     "stuttgart": (
-        # Stuttgart S-Bahn — OSM network tag is "Verkehrs- und Tarifverbund Stuttgart" (VVS).
-        # Exclude Karlsruhe/Rhein-Neckar lines that bleed into the bbox.
-        '[out:json][timeout:60];'
-        'relation["route"="train"]["network"~"Verkehrs- und Tarifverbund Stuttgart|VVS",i]["ref"~"^S[0-9]+$"](48.4,8.6,49.2,9.7);'
-        'out geom;'
+        '[out:json][timeout:90];'
+        'relation["route"="train"]["network"~"Verkehrs- und Tarifverbund Stuttgart|VVS",i]["ref"~"^S[0-9]+$"](48.4,8.6,49.2,9.7)->.r;'
+        '.r out geom; way(r.r); out tags;'
     ),
     "dublin": (
-        # DART (Dublin Area Rapid Transit) — electrified suburban loop, no through-running tunnel.
-        '[out:json][timeout:60];'
-        'relation["route"="train"]["name"~"DART",i](53.2,-6.6,53.5,-6.0);'
-        'out geom;'
+        '[out:json][timeout:90];'
+        'relation["route"="train"]["name"~"DART",i](53.2,-6.6,53.5,-6.0)->.r;'
+        '.r out geom; way(r.r); out tags;'
     ),
 }
 
@@ -232,20 +229,29 @@ def fetch_city(slug: str):
     history = LINE_HISTORY[slug]
     t0 = time.time()
     data = call_overpass(query)
-    print(f"  overpass: {len(data.get('elements', []))} relations in {time.time() - t0:.1f}s")
+    rels = [e for e in data.get("elements", []) if e.get("type") == "relation"]
+    ways = [e for e in data.get("elements", []) if e.get("type") == "way"]
+    print(f"  overpass: {len(rels)} relations + {len(ways)} way-tag records in {time.time() - t0:.1f}s")
 
-    # For each unique route ref, collect all member-way geometries into one
-    # MultiLineString feature. Round to 4 decimals (~11m at 50°N) — plenty for
-    # city-scale rendering. Drop tiny way segments (<3 points after rounding).
-    ways_by_ref = {}  # ref -> dict of signature -> coords
-    for el in data.get("elements", []):
-        if el.get("type") != "relation":
-            continue
-        tags = el.get("tags", {})
-        ref = tags.get("ref") or tags.get("name") or str(el.get("id"))
-        for line in relation_to_linestrings(el):
-            rounded = [[round(x, 4), round(y, 4)] for x, y in line]
-            # collapse exact duplicate consecutive points (introduced by rounding)
+    # Index way tags by id so we can flag tunnel sections later.
+    way_tags = {w["id"]: w.get("tags", {}) for w in ways}
+    def is_tunnel(way_id):
+        t = way_tags.get(way_id, {}).get("tunnel", "")
+        return t in ("yes", "building_passage")
+
+    # For each unique (route ref, tunnel/non-tunnel) pair collect deduped way coords.
+    ways_by_key = {}  # (ref, is_tunnel_bool) -> dict of signature -> coords
+    for rel in rels:
+        tags = rel.get("tags", {})
+        ref = tags.get("ref") or tags.get("name") or str(rel.get("id"))
+        for member in rel.get("members", []):
+            if member.get("type") != "way" or "geometry" not in member:
+                continue
+            way_id = member.get("ref")
+            tunnel_flag = is_tunnel(way_id)
+            coords = [(g["lon"], g["lat"]) for g in member["geometry"]]
+            rounded = [[round(x, 4), round(y, 4)] for x, y in coords]
+            # collapse duplicate consecutive points introduced by rounding
             dedup = [rounded[0]]
             for p in rounded[1:]:
                 if p[0] != dedup[-1][0] or p[1] != dedup[-1][1]:
@@ -255,37 +261,42 @@ def fetch_city(slug: str):
             sig_fwd = tuple((p[0], p[1]) for p in dedup)
             sig_rev = tuple(reversed(sig_fwd))
             sig = min(sig_fwd, sig_rev)
-            ways_by_ref.setdefault(ref, {}).setdefault(sig, dedup)
+            key = (ref, tunnel_flag)
+            ways_by_key.setdefault(key, {}).setdefault(sig, dedup)
 
-    # Optional tunnel-only filter: drop lines that don't pass through the
-    # through-running tunnel (e.g. RER C/E, Stuttgart S60).
+    # Optional tunnel-only filter (route refs that don't pass through the
+    # through-running tunnel — e.g. RER C/E, Stuttgart S60). Applied at the
+    # ref level so it affects both their tunnel and non-tunnel ways uniformly.
     keep_refs = TUNNEL_CONNECTED_REFS.get(slug)
     if keep_refs is not None:
-        dropped = [r for r in ways_by_ref if r not in keep_refs]
-        for r in dropped:
-            ways_by_ref.pop(r)
+        dropped = sorted({k[0] for k in ways_by_key if k[0] not in keep_refs})
+        for k in [k for k in ways_by_key if k[0] not in keep_refs]:
+            ways_by_key.pop(k)
         if dropped:
-            print(f"  tunnel-only filter: dropped non-tunnel lines {sorted(dropped)}")
+            print(f"  tunnel-only filter: dropped non-tunnel-connected lines {dropped}")
 
     features = []
-    for ref, ways in sorted(ways_by_ref.items()):
+    refs_seen = set()
+    for (ref, tunnel_flag), ways_for_key in sorted(ways_by_key.items()):
         opened = history.get(ref) or history.get(ref.lstrip("S0")) or history.get("default")
         features.append({
             "type": "Feature",
             "geometry": {
                 "type": "MultiLineString",
-                "coordinates": list(ways.values()),
+                "coordinates": list(ways_for_key.values()),
             },
             "properties": {
                 "ref": ref,
                 "opened_year": opened,
-                "segment_count": len(ways),
+                "is_tunnel": tunnel_flag,
+                "segment_count": len(ways_for_key),
             },
         })
+        refs_seen.add(ref)
 
-    print(f"  {len(features)} unique route(s): " + ", ".join(
-        f"{f['properties']['ref']}({f['properties']['segment_count']}/{f['properties']['opened_year']})"
-        for f in features))
+    n_tunnel_feats = sum(1 for f in features if f["properties"]["is_tunnel"])
+    n_open_feats = sum(1 for f in features if not f["properties"]["is_tunnel"])
+    print(f"  {len(refs_seen)} routes, {n_open_feats} above-ground features, {n_tunnel_feats} tunnel features")
     fc = {"type": "FeatureCollection", "features": features}
     out_path = DATA_DIR / f"{slug}_rail.geojson"
     out_path.write_text(json.dumps(fc))
@@ -297,7 +308,7 @@ def main():
     if len(sys.argv) > 1:
         targets = sys.argv[1:]
     else:
-        targets = ["copenhagen", "munich", "zurich", "paris", "frankfurt", "stuttgart"]
+        targets = ["copenhagen", "munich", "zurich", "paris", "frankfurt", "stuttgart", "dublin"]
     for slug in targets:
         fetch_city(slug)
         time.sleep(2)  # be polite to Overpass
