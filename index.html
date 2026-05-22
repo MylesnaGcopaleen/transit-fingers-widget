@@ -71,11 +71,11 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
 /* ----- PI logo (always visible top-left) ----- */
 .pi-logo {
   position: fixed;
-  top: 18px;
-  left: 22px;
+  top: 22px;
+  left: 28px;
   z-index: 100;
-  height: 28px;
-  pointer-events: none;
+  height: 46px;
+  pointer-events: auto;
   user-select: none;
 }
 .pi-logo img { height: 100%; display: block; }
@@ -93,25 +93,31 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
 .grid-view.active { display: block; }
 
 .grid-header {
-  margin: 30px 0 36px;
-  max-width: 880px;
+  margin: 36px 0 40px;
+  max-width: 920px;
 }
 .grid-header h1 {
-  font-size: clamp(28px, 4vw, 48px);
+  font-size: clamp(30px, 4.2vw, 52px);
   line-height: 1.1;
   color: var(--pi-charcoal-dark);
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 .grid-header h1 .accent {
   background: linear-gradient(180deg, transparent 60%, var(--pi-yellow) 60%);
   padding: 0 4px;
 }
 .grid-header p {
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 22px;
+  line-height: 1.45;
   color: var(--pi-charcoal);
-  max-width: 640px;
+  max-width: 760px;
   font-weight: 300;
+}
+.grid-header p .cta {
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: 600;
+  color: var(--pi-charcoal-dark);
 }
 
 .city-grid {
@@ -413,16 +419,17 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
   <section class="grid-view" id="view-grid">
     <header class="grid-header">
       <h1>The <span class="accent">Unlock</span>: extra housing enabled by through-running rail tunnels.</h1>
-      <p>When six European cities built tunnels that let suburban trains run through their centres, the cities reshaped around the rail. A third to seven in ten of every new home since the tunnel opened sits within walking distance of a station. Click a city to see how. Dublin, with no through-running tunnel, sprawled instead.</p>
+      <p>When six European cities built tunnels that let suburban trains run through their centres, lots of new housing became possible.<br><span class="cta">Click a city to see how.</span></p>
     </header>
 
     <div class="city-grid" id="city-grid"></div>
 
     <div class="dublin-panel" data-city="dublin">
       <div class="tile-canvas" id="tile-canvas-dublin"></div>
+      <div class="tile-stat" style="top:16px; right:18px; position:absolute; background:var(--pi-yellow); color:var(--pi-charcoal-dark); font-family:'Du Nord',sans-serif; font-weight:600; font-size:15px; padding:5px 11px; border-radius:5px; line-height:1; letter-spacing:-0.01em;">Only 14% near rail</div>
       <div class="tile-overlay">
         <h2>Dublin — the counterfactual</h2>
-        <div class="dublin-sub">No through-running tunnel. Growth from 1975 to today scattered across the metro region instead of snapping to rail corridors. Click for the full picture.</div>
+        <div class="dublin-sub">No through-running tunnel. Only 14% of new homes built since 1975 sit within walking distance of rail; the rest scattered across the metro region. Click for the full picture.</div>
       </div>
     </div>
 
@@ -514,34 +521,34 @@ const CITIES = {
   paris: {
     label: 'Paris',
     tunnelName: 'RER A · Châtelet-Les Halles, 1977',
-    bounds: [[1.85, 48.55], [2.85, 49.10]],
+    bounds: [[2.05, 48.68], [2.65, 49.03]],
     tunnel_year: 1977,
     construction_years: [1971, 1977],
-    homesLabel: '610,000 homes',
-    pctLabel: '33%',
+    homesLabel: '290,000 homes',
+    pctLabel: '40%',
   },
   frankfurt: {
     label: 'Frankfurt',
     tunnelName: 'S-Bahn Citytunnel, 1978',
-    bounds: [[8.20, 49.85], [9.05, 50.40]],
+    bounds: [[8.40, 49.95], [8.95, 50.28]],
     tunnel_year: 1978,
     construction_years: [1969, 1978],
-    homesLabel: '310,000 homes',
-    pctLabel: '34%',
+    homesLabel: '230,000 homes',
+    pctLabel: '60%',
   },
   stuttgart: {
     label: 'Stuttgart',
     tunnelName: 'S-Bahn Stammstrecke · Hbf–Schwabstrasse, 1978',
-    bounds: [[8.85, 48.55], [9.55, 49.05]],
+    bounds: [[8.95, 48.63], [9.40, 48.93]],
     tunnel_year: 1978,
     construction_years: [1971, 1978],
-    homesLabel: '280,000 homes',
-    pctLabel: '35%',
+    homesLabel: '170,000 homes',
+    pctLabel: '50%',
   },
   munich: {
     label: 'Munich',
     tunnelName: 'S-Bahn Stammstrecke, 1972',
-    bounds: [[11.00, 47.90], [12.10, 48.45]],
+    bounds: [[11.30, 47.95], [11.85, 48.30]],
     tunnel_year: 1972,
     construction_years: [1965, 1972],
     homesLabel: '620,000 homes',
@@ -550,7 +557,7 @@ const CITIES = {
   copenhagen: {
     label: 'Copenhagen',
     tunnelName: 'Boulevardbanen S-tog, 1934',
-    bounds: [[12.00, 55.45], [12.95, 55.95]],
+    bounds: [[12.25, 55.55], [12.80, 55.85]],
     tunnel_year: 1934,
     construction_years: [1911, 1934],
     homesLabel: '240,000 homes',
@@ -558,12 +565,12 @@ const CITIES = {
   },
   dublin: {
     label: 'Dublin',
-    tunnelName: 'No through-running tunnel',
+    tunnelName: 'DART suburban rail · no through-running tunnel',
     bounds: [[-6.50, 53.22], [-6.08, 53.48]],
-    tunnel_year: null,   // no tunnel
+    tunnel_year: null,   // no through-running tunnel
     is_dublin: true,
-    homesLabel: '',
-    pctLabel: '',
+    homesLabel: '59,000 homes',
+    pctLabel: '14%',
   },
 };
 
@@ -839,7 +846,20 @@ function buildMilestones(slug) {
   const constr = cfg.construction_years;
   if (cfg.is_dublin) {
     return [
-      { id: 'sprawl', t: 1.5, year: '1975–Present', caption: 'How a city grows in the absence of through-running rail investments.' },
+      {
+        id: 'period',
+        t: 1.0,
+        year: '1975–Present',
+        caption: 'How a city grows in the absence of a through-running rail tunnel.',
+      },
+      {
+        id: 'impact',
+        t: 6.0,
+        impact: true,
+        year: cfg.homesLabel.split(' ')[0],     // "59,000"
+        yearSuffix: 'homes',
+        caption: `Only ${cfg.pctLabel} of new homes built since 1975 are within 2 km of rail. The rest scattered across the metro region.`,
+      },
     ];
   }
   // Milestone 1: construction window
@@ -894,7 +914,8 @@ function buildLegend(slug) {
     el.innerHTML = `
       <div class="legend-title">First built up by…</div>
       <div class="legend-row"><span class="legend-swatch" style="background:#555555;"></span>Built by 1975</div>
-      <div class="legend-row"><span class="legend-swatch" style="background:#FFC633;"></span>Built since 1975 (sprawl, no tunnel)</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#FFC633;"></span>Built since 1975, within 2km of rail</div>
+      <div class="legend-row"><span class="legend-swatch" style="background:#D4D4D4;"></span>Built since 1975, further from rail</div>
       <div class="legend-row" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--pi-mid-grey);">
         <span style="display:inline-block;width:14px;height:0;border-top:2px solid var(--pi-charcoal-dark);"></span> DART (electrified suburban rail)
       </div>`;

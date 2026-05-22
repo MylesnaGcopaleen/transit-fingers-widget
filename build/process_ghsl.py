@@ -78,28 +78,27 @@ CITIES = {
     },
     "paris": {
         "tile": "R4_C19",
-        "bbox_wgs84": (1.85, 48.55, 2.85, 49.10),
+        "bbox_wgs84": (2.05, 48.68, 2.65, 49.03),
         "label": "Paris",
         "tunnel_year": 1977,  # RER A Châtelet-Les Halles through-running tunnel. RER B southern link 1981.
     },
     "frankfurt": {
         "tile": "R4_C19",
-        "bbox_wgs84": (8.20, 49.85, 9.05, 50.40),
+        "bbox_wgs84": (8.40, 49.95, 8.95, 50.28),
         "label": "Frankfurt",
         "tunnel_year": 1978,  # Citytunnel Frankfurt — S-Bahn through-running.
     },
     "stuttgart": {
         "tile": "R4_C19",
-        "bbox_wgs84": (8.85, 48.55, 9.55, 49.05),
+        "bbox_wgs84": (8.95, 48.63, 9.40, 48.93),
         "label": "Stuttgart",
         "tunnel_year": 1978,  # Stuttgart S-Bahn Stammstrecke (Hbf–Schwabstrasse) opens.
     },
     "dublin": {
         "tile": "R3_C18",  # Ireland lies in tile R3_C18 (≈ -10°–0° E × 50°–60° N in Mollweide).
-        "bbox_wgs84": (-6.55, 53.20, -6.05, 53.50),
+        "bbox_wgs84": (-6.50, 53.22, -6.08, 53.48),
         "label": "Dublin",
-        "tunnel_year": 1975,  # Sentinel — Dublin has no through-running tunnel. All growth treated as "no-tunnel".
-        "no_tunnel": True,
+        "tunnel_year": 1975,  # No through-running tunnel — sentinel year; growth is classified near/far DART.
     },
 }
 
