@@ -7,6 +7,8 @@
 
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
 
 <style>
 @font-face {
@@ -48,8 +50,6 @@
   --pi-light-grey:    #FAFAFA;
   --pi-mid-grey:      #D4D4D4;
   --pi-dark-grey:     #AAAAAA;
-  --pi-pink:          #FBE5DA;   /* soft pink — city-detail and Dublin caption background */
-  --pi-pink-deeper:   #F5D5C6;   /* slightly deeper, for borders against the pink */
   --pi-paper:         #FAFAFA;
   --pi-ink:           #1B1F23;
 }
@@ -70,18 +70,18 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
 
 #app { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* ----- Top header bar (logo + thin charcoal line, scrolls away) ----- */
+/* ----- Top header bar (PI-style: large logo + thin charcoal line, scrolls away) ----- */
 #top-header {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 78px;
+  height: 100px;
   background: var(--pi-paper);
   border-bottom: 1px solid var(--pi-charcoal);
   z-index: 100;
   display: flex;
   align-items: center;
-  padding: 0 32px;
-  gap: 32px;
+  padding: 0 36px;
+  gap: 36px;
   transition: transform 0.25s ease;
   will-change: transform;
 }
@@ -90,31 +90,33 @@ h1, h2, h3, .headline { font-family: 'Du Nord', sans-serif; font-weight: 600; co
   display: block;
   text-decoration: none;
 }
-#top-header .logo-wrap img { height: 46px; display: block; }
+#top-header .logo-wrap img { height: 64px; display: block; }
 #top-header .back-link {
   font-family: 'TWK Lausanne', sans-serif;
   font-weight: 400;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--pi-charcoal);
   text-decoration: none;
   display: none;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 5px;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 1px solid var(--pi-mid-grey);
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-#top-header .back-link:hover { background: var(--pi-mid-grey); color: var(--pi-charcoal-dark); }
+#top-header .back-link:hover { background: var(--pi-mid-grey); color: var(--pi-charcoal-dark); border-color: var(--pi-charcoal); }
 #top-header .header-title {
   margin-left: auto;
   font-family: 'Du Nord', sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--pi-charcoal-dark);
   text-align: right;
   display: none;
-  line-height: 1.25;
+  line-height: 1.3;
+  max-width: 460px;
 }
 #top-header .header-title .accent {
   background: linear-gradient(180deg, transparent 60%, var(--pi-yellow) 60%);
@@ -128,7 +130,7 @@ body.is-detail #top-header .header-title { display: block; }
    =========================================================== */
 .grid-view {
   display: none;
-  padding: 110px 36px 36px;    /* top padding clears the fixed top-header */
+  padding: 130px 36px 36px;    /* top padding clears the fixed top-header */
   max-width: 1480px;
   margin: 0 auto;
   width: 100%;
@@ -295,38 +297,38 @@ body.is-detail #top-header .header-title { display: block; }
 .detail-view {
   display: none;
   position: fixed;
-  top: 78px;                       /* clears the fixed top-header */
+  top: 100px;                      /* clears the fixed top-header */
   left: 0; right: 0; bottom: 0;
   overflow: hidden;
 }
-.detail-view.active { display: grid; grid-template-columns: 1fr 400px; }
+.detail-view.active { display: grid; grid-template-columns: 1fr 440px; }
 
 .detail-map-wrap {
   position: relative;
   overflow: hidden;
-  background: var(--pi-pink);
+  background: var(--pi-light-grey);
 }
 #detail-map { position: absolute; inset: 0; }
 
 .detail-legend {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  background: rgba(250, 250, 250, 0.96);
+  bottom: 18px;
+  left: 18px;
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--pi-mid-grey);
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 11.5px;
+  border-radius: 7px;
+  padding: 14px 16px;
+  font-size: 13.5px;
   z-index: 5;
   backdrop-filter: blur(4px);
 }
-.legend-title { font-weight: 600; font-size: 12px; color: var(--pi-charcoal-dark); margin-bottom: 6px; font-family: 'Du Nord', sans-serif; }
-.legend-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; color: var(--pi-charcoal); }
-.legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.legend-title { font-weight: 600; font-size: 14px; color: var(--pi-charcoal-dark); margin-bottom: 8px; font-family: 'Du Nord', sans-serif; }
+.legend-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; color: var(--pi-charcoal); }
+.legend-swatch { width: 16px; height: 16px; border-radius: 2px; flex-shrink: 0; }
 
 .detail-panel {
-  background: var(--pi-pink);
-  border-left: 1px solid var(--pi-pink-deeper);
+  background: var(--pi-yellow-light);
+  border-left: 1px solid #E6CC7B;
   padding: 40px 36px;
   overflow-y: auto;
   display: flex;
@@ -390,28 +392,29 @@ body.is-detail #top-header .header-title { display: block; }
 .replay-btn {
   font-family: 'TWK Lausanne', sans-serif;
   font-weight: 400;
-  font-size: 12px;
+  font-size: 13px;
   background: transparent;
-  border: 1px solid var(--pi-pink-deeper);
+  border: 1px solid #E6CC7B;
   color: var(--pi-charcoal);
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.02em;
 }
-.replay-btn:hover { background: var(--pi-pink-deeper); color: var(--pi-charcoal-dark); }
+.replay-btn:hover { background: var(--pi-yellow); color: var(--pi-charcoal-dark); border-color: var(--pi-yellow); }
 
 @media (max-width: 900px) {
   .city-grid { grid-template-columns: repeat(2, 1fr); }
   .detail-view.active { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-  .detail-panel { border-left: 0; border-top: 1px solid var(--pi-pink-deeper); padding: 24px 22px; }
+  .detail-panel { border-left: 0; border-top: 1px solid #E6CC7B; padding: 24px 22px; }
   .milestone .year { font-size: 44px; }
   .milestone.impact .year { font-size: 52px; }
-  #top-header { height: 64px; padding: 0 18px; }
-  #top-header .logo-wrap img { height: 36px; }
+  #top-header { height: 72px; padding: 0 18px; gap: 18px; }
+  #top-header .logo-wrap img { height: 44px; }
   #top-header .header-title { display: none !important; }
-  .grid-view { padding: 90px 18px 18px; }
-  .detail-view { top: 64px; }
+  #top-header .back-link { font-size: 13px; padding: 8px 12px; }
+  .grid-view { padding: 96px 18px 18px; }
+  .detail-view { top: 72px; }
 }
 </style>
 </head>
@@ -478,7 +481,7 @@ const COLOR_NEAR_RAIL = '#FFC633';   // PI Yellow — post-tunnel growth within 
 const COLOR_FAR_RAIL  = '#D4D4D4';   // Mid grey — post-tunnel growth further from rail
 
 const EPOCHS = [1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025];
-const ANIM_DURATION_MS = 15000;      // Total city-detail animation length
+const ANIM_DURATION_MS = 10000;      // Total city-detail animation length
 const ANIM_START_YEAR = EPOCHS[0];
 const ANIM_END_YEAR = EPOCHS[EPOCHS.length - 1];
 
@@ -502,8 +505,8 @@ const CITIES = {
     bounds: [[1.85, 48.55], [2.95, 49.15]],
     tunnel_year: 1977,
     construction_years: [1971, 1977],
-    homesLabel: '610,000 homes',
-    pctLabel: '31%',
+    homesLabel: '600,000 homes',
+    pctLabel: '30%',
   },
   frankfurt: {
     label: 'Frankfurt',
@@ -520,8 +523,8 @@ const CITIES = {
     bounds: [[9.00, 48.65], [9.40, 48.93]],
     tunnel_year: 1978,
     construction_years: [1971, 1978],
-    homesLabel: '160,000 homes',
-    pctLabel: '56%',
+    homesLabel: '150,000 homes',
+    pctLabel: '54%',
   },
   munich: {
     label: 'Munich',
@@ -796,30 +799,57 @@ function setLayerVisibilities(activeSlug) {
 }
 
 function setMapAtYear(slug, currentYear) {
-  // Smoothly cross-fade between EPOCHS using the cumulative PNGs.
-  // Each PNG is cumulative, so the visible one at currentYear should be
-  // the one matching the lower-bound epoch, while the next one fades in.
+  // Two-phase animation:
+  //   Phase A — pre-tunnel: show only the cumulative PRE baseline (the dataset
+  //             treats all pre-tunnel-year pixels as CLS_PRE / dark slate).
+  //             Post-tunnel layers are forced to opacity 0, so NO yellow appears.
+  //   Phase B — post-tunnel: crossfade through subsequent EPOCHS so yellow/grey
+  //             pixels accumulate as the network unlocks growth.
   const cfg = CITIES[slug];
-  // Clamp
   if (currentYear < EPOCHS[0]) currentYear = EPOCHS[0];
   if (currentYear > EPOCHS[EPOCHS.length - 1]) currentYear = EPOCHS[EPOCHS.length - 1];
-  // Find the bracket of epochs
-  let i = 0;
-  for (; i < EPOCHS.length - 1; i++) {
-    if (EPOCHS[i + 1] > currentYear) break;
+  const tunnelYear = cfg.tunnel_year ?? (EPOCHS[0] - 1);
+
+  // pre_idx = last EPOCHS index strictly before the tunnel.
+  // tunnel_idx = first EPOCHS index at/after the tunnel.
+  let pre_idx = -1, tunnel_idx = -1;
+  for (let i = 0; i < EPOCHS.length; i++) {
+    if (EPOCHS[i] < tunnelYear) pre_idx = i;
+    else if (tunnel_idx < 0) tunnel_idx = i;
   }
-  const lowerIdx = i;
-  const upperIdx = Math.min(i + 1, EPOCHS.length - 1);
-  const span = EPOCHS[upperIdx] - EPOCHS[lowerIdx] || 1;
-  const frac = (currentYear - EPOCHS[lowerIdx]) / span;
+  if (pre_idx < 0) pre_idx = 0;
+  if (tunnel_idx < 0) tunnel_idx = EPOCHS.length - 1;
+
+  let lowerIdx, upperIdx, frac;
+  if (currentYear < tunnelYear) {
+    // Pre-tunnel: hold the full PRE baseline (epoch at pre_idx)
+    lowerIdx = pre_idx;
+    upperIdx = pre_idx;
+    frac = 0;
+  } else {
+    // Post-tunnel crossfade, starting from tunnel_idx
+    let i = tunnel_idx;
+    while (i < EPOCHS.length - 1 && EPOCHS[i + 1] <= currentYear) i++;
+    lowerIdx = i;
+    upperIdx = Math.min(i + 1, EPOCHS.length - 1);
+    const span = EPOCHS[upperIdx] - EPOCHS[lowerIdx] || 1;
+    frac = (currentYear - EPOCHS[lowerIdx]) / span;
+  }
+
   for (let k = 0; k < EPOCHS.length; k++) {
     const lid = `${slug}_${EPOCHS[k]}`;
     if (!detailMap.getLayer(lid)) continue;
     let op = 0;
-    if (k < lowerIdx) op = 1;
-    else if (k === lowerIdx) op = 1;
-    else if (k === upperIdx) op = frac;
-    else op = 0;
+    if (currentYear < tunnelYear) {
+      // Pre-tunnel: ONLY cumulative pre-tunnel layers visible. No yellow.
+      op = (k <= pre_idx) ? 1 : 0;
+    } else {
+      if (k <= pre_idx) op = 1;            // PRE baseline always visible
+      else if (k < lowerIdx) op = 1;       // cumulative growth so far
+      else if (k === lowerIdx) op = 1;
+      else if (k === upperIdx) op = frac;  // upper layer fading in
+      else op = 0;
+    }
     detailMap.setPaintProperty(lid, 'raster-opacity', op);
   }
   // Tunnel fades in around tunnel_year. Dublin has no tunnel_year → stays hidden.
@@ -855,7 +885,7 @@ function buildMilestones(slug) {
       },
       {
         id: 'impact',
-        t: 6.0,
+        t: 5.0,
         impact: true,
         year: cfg.homesLabel.split(' ')[0],     // "59,000"
         yearSuffix: 'homes',
@@ -875,17 +905,19 @@ function buildMilestones(slug) {
     },
     {
       id: 'opening',
-      t: 6.0,
+      t: 4.0,
       year: `${tunnel}`,
       caption: 'Through-running tunnel completed. Suburban dead-end lines now run through the city centre.',
     },
     {
       id: 'impact',
-      t: 11.0,
+      t: 7.0,                                         // ~5s after milestone 2 in 10s animation
       impact: true,
       year: `${cfg.homesLabel.split(' ')[0]}`,        // "330,000"
       yearSuffix: 'homes',
-      caption: `${cfg.pctLabel} of new homes built since ${tunnel} are within 2 km of electrified rail.`,
+      // For tunnels that predate GHSL (Copenhagen 1934, Munich 1972) we honestly
+      // say "since 1975" — the dataset begins there.
+      caption: `${cfg.pctLabel} of new homes built since ${Math.max(tunnel, 1975)} are within 2 km of electrified rail.`,
     },
   ];
 }
@@ -949,7 +981,10 @@ function openCityDetail(slug) {
   const apply = () => {
     addCityLayersToDetail(slug);
     setLayerVisibilities(slug);
-    detailMap.fitBounds(cfg.bounds, { padding: 30, animate: false });
+    // The map container's size changes when the detail view becomes visible;
+    // resize() makes MapLibre re-read the dimensions before we fit bounds.
+    detailMap.resize();
+    detailMap.fitBounds(cfg.bounds, { padding: 0, animate: false });
     setMapAtYear(slug, ANIM_START_YEAR);
     const milestones = renderMilestoneShells(slug);
     startDetailAnimation(slug, milestones);

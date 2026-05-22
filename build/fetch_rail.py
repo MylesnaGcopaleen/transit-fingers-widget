@@ -146,21 +146,34 @@ QUERIES = {
 
 # Tunnel-connected line whitelist. When a city is in this dict, only lines whose
 # `ref` is in the set are emitted to the GeoJSON. Lines that exist physically but
-# don't pass through the through-running tunnel get dropped — the corridor mask
-# (and the visible rail layer) then only show lines that actually owe their
-# operational character to the tunnel.
-#
-# Cities not listed → all S-Bahn / S-tog lines pass through their respective
-# tunnels, no whitelist needed.
+# don't pass through the through-running tunnel get dropped.
 TUNNEL_CONNECTED_REFS = {
-    # Châtelet-Les Halles (1977) carries RER A, B (via the 1981 southern link)
-    # and D. RER C uses the old Quai d'Orsay alignment; RER E has its own 1999
-    # Magenta-Haussmann tunnel. Drop C and E for a strict 1977-tunnel argument.
     "paris": {"A", "B", "D"},
-    # Stammstrecke Hbf–Schwabstrasse (1978) carries S1–S6 plus the S11 peak
-    # variant. S60 (Vaihingen–Böblingen) and S62 are tangential branches that
-    # don't reach the central tunnel.
     "stuttgart": {"S1", "S2", "S3", "S4", "S5", "S6", "S11"},
+}
+
+
+# For each city, the geographic centre of the through-running tunnel. Tunnel ways
+# further than CENTRAL_TUNNEL_RADIUS_KM from this point are dropped — they're
+# typically short station tunnels or hill crossings on the outer line, not the
+# main central through-running tunnel we want to highlight.
+CENTRAL_TUNNEL_CENTRE = {
+    "zurich":     (8.5440, 47.3760),   # mid-point HB → Stadelhofen
+    "paris":      (2.3471, 48.8620),   # Châtelet-Les Halles
+    "frankfurt":  (8.6800, 50.1130),   # mid-point HBf → Konstablerwache
+    "stuttgart":  (9.1750, 48.7775),   # mid-point HBf → Schwabstrasse
+    "munich":     (11.5760, 48.1380),  # mid-point HBf → Marienplatz
+    "copenhagen": (12.5710, 55.6815),  # Vesterport / Nørreport corridor
+    "dublin":     None,                # no central tunnel
+}
+CENTRAL_TUNNEL_RADIUS_KM = {
+    "zurich": 4.0,
+    "paris": 5.0,            # RER central section is wider than other cities'
+    "frankfurt": 3.5,
+    "stuttgart": 2.5,        # short, compact tunnel
+    "munich": 4.0,
+    "copenhagen": 3.5,
+    "dublin": 0,             # drop all tunnel ways for Dublin
 }
 
 
@@ -239,8 +252,24 @@ def fetch_city(slug: str):
         t = way_tags.get(way_id, {}).get("tunnel", "")
         return t in ("yes", "building_passage")
 
+    # Geographic filter for tunnel ways: only keep those within X km of the
+    # main central tunnel centre. Stations on the outer S-Bahn lines that
+    # happen to be in short tunnels (e.g. under a hill) are excluded.
+    import math
+    centre = CENTRAL_TUNNEL_CENTRE.get(slug)
+    radius_km = CENTRAL_TUNNEL_RADIUS_KM.get(slug, 0)
+    def way_in_central_tunnel(dedup_coords):
+        if centre is None or radius_km <= 0:
+            return False
+        avg_x = sum(p[0] for p in dedup_coords) / len(dedup_coords)
+        avg_y = sum(p[1] for p in dedup_coords) / len(dedup_coords)
+        dx = (avg_x - centre[0]) * 111.0 * math.cos(math.radians(centre[1]))
+        dy = (avg_y - centre[1]) * 111.0
+        return math.hypot(dx, dy) <= radius_km
+
     # For each unique (route ref, tunnel/non-tunnel) pair collect deduped way coords.
     ways_by_key = {}  # (ref, is_tunnel_bool) -> dict of signature -> coords
+    n_tunnel_dropped = 0
     for rel in rels:
         tags = rel.get("tags", {})
         ref = tags.get("ref") or tags.get("name") or str(rel.get("id"))
@@ -258,11 +287,17 @@ def fetch_city(slug: str):
                     dedup.append(p)
             if len(dedup) < 2:
                 continue
+            # Drop tunnel ways that are NOT in the central area
+            if tunnel_flag and not way_in_central_tunnel(dedup):
+                n_tunnel_dropped += 1
+                continue
             sig_fwd = tuple((p[0], p[1]) for p in dedup)
             sig_rev = tuple(reversed(sig_fwd))
             sig = min(sig_fwd, sig_rev)
             key = (ref, tunnel_flag)
             ways_by_key.setdefault(key, {}).setdefault(sig, dedup)
+    if n_tunnel_dropped:
+        print(f"  central-tunnel filter: dropped {n_tunnel_dropped} peripheral tunnel ways")
 
     # Optional tunnel-only filter (route refs that don't pass through the
     # through-running tunnel — e.g. RER C/E, Stuttgart S60). Applied at the
