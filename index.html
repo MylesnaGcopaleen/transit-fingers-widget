@@ -408,18 +408,95 @@ body.is-detail #top-header .header-title { display: block; }
 }
 .replay-btn:hover { background: var(--pi-yellow); color: var(--pi-charcoal-dark); border-color: var(--pi-yellow); }
 
+/* ----- Tablet (<= 900px) ----- */
 @media (max-width: 900px) {
-  .city-grid { grid-template-columns: repeat(2, 1fr); }
-  .detail-view.active { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-  .detail-panel { border-left: 0; border-top: 1px solid #E6CC7B; padding: 24px 22px; }
-  .milestone .year { font-size: 44px; }
-  .milestone.impact .year { font-size: 52px; }
+  .city-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .detail-view.active {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .detail-map-wrap { min-height: 0; }
+  .detail-panel {
+    border-left: 0;
+    border-top: 1px solid #E6CC7B;
+    padding: 22px 22px;
+    gap: 20px;
+    max-height: 50vh;       /* don't let the panel eat the map */
+    overflow-y: auto;
+  }
+  .milestone .year { font-size: 40px; }
+  .milestone.impact .year { font-size: 48px; }
   #top-header { height: 72px; padding: 0 18px; gap: 18px; }
   #top-header .logo-wrap img { height: 44px; }
   #top-header .header-title { display: none !important; }
   #top-header .back-link { font-size: 13px; padding: 8px 12px; }
   .grid-view { padding: 96px 18px 18px; }
   .detail-view { top: 72px; }
+  .grid-header p, .dublin-header p { font-size: 19px; }
+  .dublin-panel { aspect-ratio: 16 / 8; }
+}
+
+/* ----- Phone (<= 600px) ----- */
+@media (max-width: 600px) {
+  /* Grid view: single column, tighter spacing */
+  .city-grid { grid-template-columns: 1fr; gap: 12px; }
+  .grid-view { padding: 90px 16px 20px; }
+  .grid-header { margin: 16px 0 22px; }
+  .grid-header h1 { margin-bottom: 12px; }
+  .grid-header p { font-size: 16.5px; line-height: 1.45; }
+  .grid-header p .cta { margin-top: 4px; }
+  .dublin-header { margin: 28px 0 14px; }
+  .dublin-header h2 { margin-bottom: 10px; }
+  .dublin-header p { font-size: 16.5px; }
+  .dublin-panel { aspect-ratio: 4 / 3; }
+  .dublin-panel .tile-stat {
+    font-size: 12.5px !important;
+    padding: 4px 9px !important;
+    top: 12px !important; right: 12px !important;
+  }
+  .city-tile h2 { font-size: 20px; }
+  .city-tile .tile-tunnel { font-size: 11.5px; }
+  .city-tile .tile-stat { font-size: 12.5px; padding: 4px 8px; }
+  .city-tile .tile-overlay { padding: 12px 14px; }
+
+  /* Detail view: tighter padding, compact milestones, scroll inside panel */
+  .detail-panel {
+    padding: 18px 18px 16px;
+    gap: 14px;
+    max-height: 46vh;
+  }
+  .city-heading h1 { font-size: 26px; }
+  .city-heading .tunnel-name { font-size: 12.5px; line-height: 1.35; }
+  .milestones { gap: 14px; }
+  .milestone .year { font-size: 30px; }
+  .milestone.impact .year { font-size: 38px; }
+  .milestone .caption { font-size: 13px; max-width: none; }
+  .replay-row { padding-top: 10px; font-size: 12px; margin-top: 8px; }
+
+  /* Compact legend so it doesn't dominate the map. Shrink to content width
+     (no `right` anchor) and use a max-width that lets text wrap naturally. */
+  .detail-legend {
+    padding: 7px 9px;
+    font-size: 10.5px;
+    bottom: 8px;
+    left: 8px;
+    right: auto;
+    max-width: 240px;
+    line-height: 1.25;
+    border-radius: 5px;
+  }
+  .legend-title { font-size: 11px; margin-bottom: 4px; }
+  .legend-row { margin: 2px 0; gap: 6px; }
+  .legend-swatch { width: 11px; height: 11px; }
+
+  /* Header tightening */
+  #top-header { height: 60px; padding: 0 14px; gap: 12px; }
+  #top-header .logo-wrap img { height: 36px; }
+  #top-header .back-link { font-size: 12.5px; padding: 7px 10px; }
+  .grid-view { padding-top: 78px; }
+  .detail-view { top: 60px; }
+
+  .grid-footer { font-size: 11px; }
 }
 </style>
 </head>
@@ -861,6 +938,9 @@ function setMapAtYear(slug, currentYear) {
       else if (k === upperIdx) op = frac;  // upper layer fading in
       else op = 0;
     }
+    // Clamp to [0,1] — floating-point arithmetic can produce tiny negative
+    // values (-0.00009…) which MapLibre rejects with a paint-property error.
+    op = Math.max(0, Math.min(1, op));
     detailMap.setPaintProperty(lid, 'raster-opacity', op);
   }
   // Central through-running tunnel fades in around tunnel_year. Before that,
@@ -1028,12 +1108,18 @@ function startDetailAnimation(slug, milestones) {
     const fraction = Math.min(elapsed / ANIM_DURATION_MS, 1);
     const year = ANIM_START_YEAR + fraction * (ANIM_END_YEAR - ANIM_START_YEAR);
     setMapAtYear(slug, year);
-    // Reveal milestones whose t has arrived
+    // Reveal milestones whose t has arrived. When a milestone newly activates
+    // on a small viewport, the detail-panel may be scrolled — bring it into
+    // view so the punchline is never hidden below the fold.
     for (const m of milestones) {
       const el = document.querySelector(`#milestones .milestone[data-id="${m.id}"]`);
       if (!el) continue;
       const visible = elapsed / 1000 >= m.t;
+      const wasActive = el.classList.contains('active');
       el.classList.toggle('active', visible);
+      if (visible && !wasActive && window.matchMedia('(max-width: 900px)').matches) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
     if (elapsed < ANIM_DURATION_MS) {
       detailAnimRaf = requestAnimationFrame(frame);
