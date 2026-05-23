@@ -166,8 +166,15 @@ TUNNEL_CONNECTED_REFS = {}
 CENTRAL_TUNNEL_LINES = {
     "zurich": [
         [
-            # Hirschengrabentunnel (HB → Stadelhofen) + Zürichbergtunnel (Stadelhofen → Stettbach)
-            (8.5403, 47.3781), (8.5478, 47.3667), (8.5700, 47.3850), (8.5995, 47.4023),
+            # Hirschengrabentunnel (HBf → Stadelhofen) + Zürichbergtunnel (Stadelhofen
+            # → Stettbach). Five waypoints — the Zürichbergtunnel curves NE under the
+            # Zürichberg hill, so we need intermediate points so the polyline buffer
+            # actually follows the route. Stettbach: 47.4007°N, 8.6055°E.
+            (8.5403, 47.3782),   # HBf
+            (8.5483, 47.3666),   # Stadelhofen
+            (8.5650, 47.3815),   # mid Zürichberg curve
+            (8.5870, 47.3940),   # second curve point
+            (8.6055, 47.4007),   # Stettbach
         ],
     ],
     "paris": [
@@ -344,9 +351,14 @@ def fetch_city(slug: str):
                     dedup.append(p)
             if len(dedup) < 2:
                 continue
-            # is_central_tunnel = a tunnel-tagged way that lies on the curated
-            # through-running tunnel polyline. These get the hero treatment.
-            central_flag = tunnel_flag and way_in_central_tunnel(dedup)
+            # is_central_tunnel = any rail way along the curated through-running
+            # tunnel polyline. We deliberately DON'T require the OSM `tunnel=yes`
+            # tag: stations along the route (Stadelhofen, Stettbach, etc.) are
+            # open-air portals whose ways aren't tunnel-tagged, but we want the
+            # hero line to depict the route continuously from end to end — not
+            # broken into "underground only" sections. The polyline buffer
+            # already restricts this to the actual central route.
+            central_flag = way_in_central_tunnel(dedup)
             if central_flag:
                 n_central += 1
             sig_fwd = tuple((p[0], p[1]) for p in dedup)
